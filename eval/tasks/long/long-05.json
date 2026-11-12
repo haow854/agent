@@ -1,0 +1,17 @@
+{
+  "id": "long-05",
+  "tags": ["long", "edit"],
+  "seeds": [{"file": "long/long05_manual.md", "title": "数据口径手册"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "文档《{{title:0}}》里有三处标注“待补充”的句子，分散在全文各处。把它们分别替换掉：含“待补充编号一”的整句替换为“口径以财务系统月结数据为准。”；含“待补充编号二”的整句替换为“口径以仓配中台的出库回执为准。”；含“待补充编号三”的整句替换为“口径以客服平台的结单时间为准。”。其他内容一个字不动。",
+  "timeoutSeconds": 900,
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_not_contains", "doc": 0, "text": "待补充编号"},
+    {"type": "doc_contains", "doc": 0, "text": "口径以财务系统月结数据为准。"},
+    {"type": "doc_contains", "doc": 0, "text": "口径以仓配中台的出库回执为准。"},
+    {"type": "doc_contains", "doc": 0, "text": "口径以客服平台的结单时间为准。"},
+    {"type": "doc_contains", "doc": 0, "text": "例会纪要的归档路径全年未变。"},
+    {"type": "doc_contains", "doc": 0, "text": "所有口径变更都要在数据字典留痕。"}
+  ]
+}

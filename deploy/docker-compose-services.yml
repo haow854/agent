@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  docagent:
+    image: docagent/docagent:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == ${DOCAGENT_MANAGER_HOST}
+      restart_policy:
+        condition: on-failure
+    environment:
+      SERVER_PORT: 8080
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-docagent}
+      MYSQL_USERNAME: ${MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      COLLAB_URL: http://collab-server:1234
+      COLLAB_AI_SECRET: ${COLLAB_AI_SECRET:?COLLAB_AI_SECRET is required}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET:-docagent}
+      MINIO_BUCKET_PERMISSIONS: ${MINIO_BUCKET_PERMISSIONS:-document=admin,user;documents=admin,user;${MINIO_BUCKET:-docagent}=admin,user}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://coding.dashscope.aliyuncs.com/v1}
+    networks:
+      - docagent-network
+    ports:
+      - "8080:8080"
+
+  collab-server:
+    image: docagent/collab-server:1.0.0
+    build: ../collab-server
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    environment:
+      COLLAB_PORT: 1234
+      SPRING_URL: http://docagent:8080
+      COLLAB_AUTH: lenient
+      # 必须与 docagent 的 ai.collab.secret 一致，否则 agent 读写文档一律 403
+      COLLAB_AI_SECRET: ${COLLAB_AI_SECRET:?COLLAB_AI_SECRET is required}
+    networks:
+      - docagent-network
+    ports:
+      - "1234:1234"
+
+networks:
+  docagent-network:
+    external: true

@@ -1,0 +1,27 @@
+{
+  "id": "conv-14",
+  "tags": ["conv", "long-dialog", "create"],
+  "seeds": [{"file": "notes.md", "title": "版本笔记"}],
+  "approval": "confirm",
+  "timeoutSeconds": 600,
+  "parts": [
+    {"goal": "帮我起草一份活动通告。先新建文档《活动通告》，包含“时间”“预算”“报名”三个小节，正文都先留空或写“待定”。", "scope": {"workspace": "all"}},
+    {"goal": "活动日期定了，9 月 12 日，写进“时间”一节。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "先岔开问一下：《{{title:0}}》里桌面端现在用的是什么版本？直接回答。", "scope": {"workspace": "current", "doc": 0}, "sameSession": true},
+    {"goal": "回到通告。定个规矩：通告里所有金额一律用“万元”做单位。记住这条，后面都照办。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "预算批下来了，一百二十万，按之前定的单位规矩写进“预算”一节。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "在《{{title:0}}》的“移动端”一节末尾加一句：暂无变更计划。", "scope": {"workspace": "current", "doc": 0}, "sameSession": true},
+    {"goal": "活动日期变了，改到 9 月 20 日，把通告里的时间更新掉，别留旧日期。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "“报名”一节写上：报名截止时间为活动开始前 3 天。你按最新的活动日期把具体截止日期算出来一并写上。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "通读一遍《活动通告》，确认日期前后一致、金额单位符合之前定的规矩，有问题就地修正，没问题回复确认。", "scope": {"workspace": "all"}, "sameSession": true}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "created_exists", "titleContains": "活动通告"},
+    {"type": "created_regex", "pattern": "9\\s*月\\s*20\\s*日"},
+    {"type": "created_regex", "pattern": "9\\s*月\\s*17\\s*日"},
+    {"type": "created_regex", "pattern": "120\\s*万元|一百二十万元"},
+    {"type": "created_not_contains", "text": "9 月 12 日"},
+    {"type": "created_not_contains", "text": "9月12日"}
+  ]
+}

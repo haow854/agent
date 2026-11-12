@@ -1,0 +1,12 @@
+{
+  "id": "qa-04",
+  "tags": ["qa"],
+  "seeds": [{"file": "terms_v2.md", "title": "会员服务条款V2"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "根据文档《{{title:0}}》回答：按现行有效的规定，退款期限是多少天？只回答一个数字，不要解释。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "answer_contains", "text": "7"},
+    {"type": "answer_not_contains", "text": "14"}
+  ]
+}

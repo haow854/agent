@@ -1,0 +1,12 @@
+{
+  "id": "web-04",
+  "tags": ["web"],
+  "seeds": [],
+  "scope": {"workspace": "all"},
+  "goal": "阅读网页 https://example.com/teamsync-changelog ，这是一个很长的更新日志页面，找出 3.7.19 这个版本的发布日期，把日期直接写在回答里。注意页面一次可能抓不完，需要用 start_index 继续往后抓。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "answer_contains", "text": "2025-02-14"},
+    {"type": "tool_called", "name": "web_fetch", "min": 2}
+  ]
+}

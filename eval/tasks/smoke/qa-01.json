@@ -1,0 +1,12 @@
+{
+  "id": "qa-01",
+  "tags": ["qa"],
+  "seeds": [{"file": "member_terms.md", "title": "会员服务条款"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "根据文档《{{title:0}}》回答：会员申请退款的期限是多少天？需要提供什么凭证？请把答案直接写在回复里。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "answer_contains", "text": "14"},
+    {"type": "answer_contains", "text": "发票"}
+  ]
+}

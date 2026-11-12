@@ -1,0 +1,34 @@
+{
+  "id": "conv-13",
+  "tags": ["conv", "long-dialog", "memory"],
+  "seeds": [
+    {"file": "memo.md", "title": "周报备忘"},
+    {"file": "notes.md", "title": "版本笔记"},
+    {"file": "growth_report.md", "title": "二季度增长报告"},
+    {"file": "scoped_a.md", "title": "上线审批流程说明"}
+  ],
+  "timeoutSeconds": 600,
+  "parts": [
+    {"goal": "先记一下背景，后面会用：我们三条产品线的内部代号，高端线是“青鸟”，中端线是“白鹭”，入门线是“玄武”。确认收到即可，先不用写进任何文档。", "scope": {"workspace": "all"}},
+    {"goal": "在文档《{{title:1}}》的“桌面端”一节末尾加一句：2.7.2 小修版本已发布。", "scope": {"workspace": "current", "doc": 1}, "sameSession": true},
+    {"goal": "看一下文档《{{title:2}}》，三季度的用户增长目标是环比百分之多少？直接回答。", "scope": {"workspace": "current", "doc": 2}, "sameSession": true},
+    {"goal": "在文档《{{title:3}}》末尾加一句：节假日期间冻结一切发布。", "scope": {"workspace": "current", "doc": 3}, "sameSession": true},
+    {"goal": "《{{title:1}}》里移动端目前有升级诉求吗？直接回答。", "scope": {"workspace": "current", "doc": 1}, "sameSession": true},
+    {"goal": "把《{{title:2}}》第四节的标题改成“四、三季度展望”，正文不动。", "scope": {"workspace": "current", "doc": 2}, "sameSession": true},
+    {"goal": "《{{title:3}}》里上线前需要完成哪三步？直接回答。", "scope": {"workspace": "current", "doc": 3}, "sameSession": true},
+    {"goal": "在《{{title:1}}》的“移动端”一节末尾加一句：批注同步问题已修复。", "scope": {"workspace": "current", "doc": 1}, "sameSession": true},
+    {"goal": "《{{title:2}}》里成都和杭州是在哪一节被提到的？直接回答节名。", "scope": {"workspace": "current", "doc": 2}, "sameSession": true},
+    {"goal": "在文档《{{title:0}}》“风险与求助”一节末尾加一句：风控接口文档已再次催办。", "scope": {"workspace": "current", "doc": 0}, "sameSession": true},
+    {"goal": "现在把最开始说的三条产品线代号整理成一个新小节加到文档《{{title:0}}》里，小节标题“产品线代号”，三条各占一行，格式：线别——代号。", "scope": {"workspace": "current", "doc": 0}, "sameSession": true},
+    {"goal": "最后确认一下：入门线的代号是什么？只答代号本身。", "scope": {"workspace": "all"}, "sameSession": true}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_contains", "doc": 0, "text": "青鸟"},
+    {"type": "doc_contains", "doc": 0, "text": "白鹭"},
+    {"type": "doc_contains", "doc": 0, "text": "玄武"},
+    {"type": "answer_contains", "text": "玄武"},
+    {"type": "doc_contains", "doc": 1, "text": "2.7.2 小修版本已发布"},
+    {"type": "doc_contains", "doc": 0, "text": "风控接口文档已再次催办"}
+  ]
+}

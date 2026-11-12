@@ -1,0 +1,18 @@
+{
+  "id": "mem-02",
+  "tags": ["memory"],
+  "seeds": [{"file": "memo.md", "title": "周报备忘"}],
+  "cleanupMemory": true,
+  "parts": [
+    {"goal": "记住我的一个长期偏好：以后给我的文档新增小节时，小节标题必须以【新】开头。这条偏好记到长期记忆里。", "scope": {"workspace": "all"}},
+    {"goal": "我之前定的那个小节标题前缀的偏好改一下：前缀不用【新】了，改成【改】。更新你的长期记忆。", "scope": {"workspace": "all"}},
+    {"goal": "在文档《{{title:0}}》里新增一个小节，内容是：本周五下午三点例会改为线上进行。", "scope": {"workspace": "current", "doc": 0}}
+  ],
+  "checks": [
+    {"type": "doc_contains", "doc": 0, "text": "【改】"},
+    {"type": "doc_not_contains", "doc": 0, "text": "【新】"},
+    {"type": "memory_contains", "text": "【改】"},
+    {"type": "doc_contains", "doc": 0, "text": "例会"},
+    {"type": "task_status", "expect": "success"}
+  ]
+}

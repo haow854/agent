@@ -1,0 +1,16 @@
+{
+  "id": "mem-05",
+  "tags": ["memory"],
+  "seeds": [{"file": "memo.md", "title": "周报备忘"}],
+  "cleanupMemory": true,
+  "parts": [
+    {"goal": "记住我的长期偏好：给我的文档新增小节时，小节标题以【补】开头。记到长期记忆。", "scope": {"workspace": "all"}},
+    {"goal": "在文档《{{title:0}}》里新增一个小节，内容是：新版报表口径下周切换。注意：这一次是例外，标题不要加任何前缀。", "scope": {"workspace": "current", "doc": 0}}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_not_contains", "doc": 0, "text": "【补】"},
+    {"type": "doc_contains", "doc": 0, "text": "新版报表口径"},
+    {"type": "memory_contains", "text": "【补】"}
+  ]
+}

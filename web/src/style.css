@@ -1,0 +1,106 @@
+/* 清除浏览器默认的内外边距 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --brand: #d97757;
+  --brand-strong: #c15f3c;
+  --brand-soft: #f7ede8;
+  --brand-border: #ebc8b8;
+
+  /* 中性选中/气泡底，避免整块实色 */
+  --ink-soft: #eae7de;
+
+  --bg-app: #faf9f5;
+  --bg-sunken: #f5f3ec;
+  --bg-raised: #ffffff;
+  --bg-hover: #ebe8de;
+
+  --text-primary: #141413;
+  --text-secondary: #5c5a52;
+  --text-muted: #8f8b7e;
+
+  --border: #e6e2d7;
+  --border-strong: #d2cdbe;
+
+  --danger: #b8483f;
+  --danger-soft: #fbeeec;
+  --warning: #b8863f;
+  --success: #5f7a3f;
+
+  --el-color-primary: #2f2e2b;
+  --el-color-primary-light-3: #6f6d67;
+  --el-color-primary-light-4: #837f78;
+  --el-color-primary-light-5: #97938a;
+  --el-color-primary-light-6: #aba79c;
+  --el-color-primary-light-7: #c0bbae;
+  --el-color-primary-light-8: #d9d5cb;
+  --el-color-primary-light-9: #eeebe3;
+  --el-color-primary-dark-2: #1a1a18;
+
+  --el-color-danger: #b8483f;
+  --el-color-danger-light-3: #cd7f79;
+  --el-color-danger-light-5: #dca49f;
+  --el-color-danger-light-7: #eac8c5;
+  --el-color-danger-light-8: #eedad7;
+  --el-color-danger-light-9: #f8ecec;
+  --el-color-danger-dark-2: #933a32;
+
+  --el-color-success: #5f7a3f;
+  --el-color-success-light-3: #8fa279;
+  --el-color-success-light-5: #afbd9f;
+  --el-color-success-light-7: #cfd7c5;
+  --el-color-success-light-8: #dfe5d9;
+  --el-color-success-light-9: #eff2ec;
+  --el-color-success-dark-2: #4c6232;
+
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+
+  --el-text-color-primary: #141413;
+  --el-text-color-regular: #5c5a52;
+  --el-text-color-secondary: #8f8b7e;
+  --el-border-color: #e6e2d7;
+  --el-border-color-light: #ece9de;
+  --el-border-color-lighter: #f1efe6;
+  --el-fill-color-blank: #ffffff;
+  --el-fill-color-light: #f0eee6;
+}
+
+/* 让 html, body 和 Vue 的根节点占满全屏 */
+html, body, #app {
+  width: 100%;
+  height: 100%;
+  /* 设置默认字体和背景色 */
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  background-color: var(--bg-app);
+  /* 隐藏超出屏幕的部分，防止出现难看的滚动条 */
+  overflow: hidden;
+}
+
+/* 移除 Element Plus 中超链接的默认下划线 */
+a {
+  text-decoration: none;
+}
+
+.el-select-dropdown__item.is-selected {
+  font-weight: 500;
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--bg-raised);
+  --el-button-text-color: var(--text-primary);
+  --el-button-border-color: var(--border-strong);
+  --el-button-hover-bg-color: var(--bg-sunken);
+  --el-button-hover-text-color: var(--text-primary);
+  --el-button-hover-border-color: var(--brand);
+  --el-button-active-bg-color: var(--bg-hover);
+  --el-button-active-text-color: var(--text-primary);
+  --el-button-active-border-color: var(--brand);
+  --el-button-disabled-bg-color: var(--bg-sunken);
+  --el-button-disabled-text-color: var(--text-muted);
+  --el-button-disabled-border-color: var(--border);
+}

@@ -1,0 +1,20 @@
+{
+  "id": "conv-03",
+  "tags": ["conv", "memory", "long"],
+  "seeds": [
+    {"file": "long/long04_report.md", "title": "全年指标核对报告"},
+    {"file": "memo.md", "title": "周报备忘"}
+  ],
+  "timeoutSeconds": 900,
+  "parts": [
+    {"goal": "接下来的工作都围绕我们的内部项目展开，项目代号叫“北斗七号”。记住这个代号，后面我说“项目”指的就是它。先回复确认收到即可。", "scope": {"workspace": "all"}},
+    {"goal": "看一下文档《{{title:0}}》，数一数正文一共分多少章，把每一章的标题按顺序列在回答里。", "scope": {"workspace": "current", "doc": 0}, "sameSession": true},
+    {"goal": "在文档《{{title:1}}》里新增一个小节，小节标题必须带上项目代号，内容写：项目下周进入联调阶段。", "scope": {"workspace": "current", "doc": 1}, "sameSession": true}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_contains", "doc": 1, "text": "北斗七号"},
+    {"type": "doc_contains", "doc": 1, "text": "联调"},
+    {"type": "doc_contains", "doc": 1, "text": "支付对账模块"}
+  ]
+}

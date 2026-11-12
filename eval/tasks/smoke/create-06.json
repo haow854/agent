@@ -1,0 +1,20 @@
+{
+  "id": "create-06",
+  "tags": ["create"],
+  "seeds": [{"file": "roster.md", "title": "员工名册"}],
+  "scope": {"workspace": "all"},
+  "goal": "按文档《{{title:0}}》的名册，新建一篇标题为《值班表》的文档：一个 Markdown 表格，两列表头“班次”和“值班人”，班次为周一到周四各分上午、下午共 8 个，名册里 8 个人每人恰好排一个班次，一个不许重复、一个不许漏。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "created_exists", "titleContains": "值班表"},
+    {"type": "created_regex", "pattern": "\\|\\s*班次\\s*\\|\\s*值班人\\s*\\|"},
+    {"type": "created_text_count", "text": "陈一", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "林二", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "黄三", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "吴四", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "郑五", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "冯六", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "褚七", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "卫八", "min": 1, "max": 1}
+  ]
+}

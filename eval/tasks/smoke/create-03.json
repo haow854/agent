@@ -1,0 +1,20 @@
+{
+  "id": "create-03",
+  "tags": ["create"],
+  "seeds": [{"file": "project_log.md", "title": "新版工作台项目日志"}],
+  "scope": {"workspace": "all"},
+  "goal": "阅读文档《{{title:0}}》，新建一篇标题为《里程碑表》的文档，内容是一个 Markdown 表格，两列表头为“日期”和“事件”，收录日志里全部带 2026-XX-XX 日期的里程碑，并按日期从新到旧排序。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "created_exists", "titleContains": "里程碑表"},
+    {"type": "created_regex", "pattern": "\\|\\s*日期\\s*\\|\\s*事件\\s*\\|"},
+    {"type": "created_contains", "text": "2026-01-12"},
+    {"type": "created_contains", "text": "2026-02-09"},
+    {"type": "created_contains", "text": "2026-03-05"},
+    {"type": "created_contains", "text": "2026-04-18"},
+    {"type": "created_contains", "text": "2026-05-30"},
+    {"type": "created_contains", "text": "2026-06-21"},
+    {"type": "created_contains", "text": "2026-07-15"},
+    {"type": "created_regex", "pattern": "2026-07-15[\\s\\S]*2026-05-30[\\s\\S]*2026-03-05[\\s\\S]*2026-01-12"}
+  ]
+}

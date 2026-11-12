@@ -1,0 +1,25 @@
+{
+  "id": "long-04",
+  "tags": ["long", "qa"],
+  "seeds": [{"file": "long/long04_report.md", "title": "全年指标核对报告"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "文档《{{title:0}}》正文分十八章，每章提到一个指标的全年数字，文末“附录：关键指标汇总表”也列了这些指标。请逐一核对正文数字与附录数字，把所有不一致的指标列在回答里，每条包含指标名、正文值、附录值。数字一致的不要列。注意有些差异很小，要精确到小数逐位比对。",
+  "timeoutSeconds": 900,
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "answer_contains", "text": "华东大区退货率"},
+    {"type": "answer_contains", "text": "华南大区客单价"},
+    {"type": "answer_contains", "text": "西北大区履约时效"},
+    {"type": "answer_contains", "text": "会员月活跃率"},
+    {"type": "answer_contains", "text": "新客首单转化率"},
+    {"type": "answer_contains", "text": "客服工单一次解决率"},
+    {"type": "answer_contains", "text": "仓储人效"},
+    {"type": "answer_contains", "text": "干线准点率"},
+    {"type": "answer_contains", "text": "售后平均处理时长"},
+    {"type": "answer_contains", "text": "移动端启动耗时"},
+    {"type": "answer_contains", "text": "支付渠道故障次数"},
+    {"type": "answer_contains", "text": "内容审核积压量"},
+    {"type": "answer_not_regex", "pattern": "华北大区客单价[^。\\n]{0,25}(矛盾|不一致|冲突|对不上)"},
+    {"type": "answer_not_regex", "pattern": "线上支付成功率[^。\\n]{0,25}(矛盾|不一致|冲突|对不上)"}
+  ]
+}

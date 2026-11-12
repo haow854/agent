@@ -1,0 +1,20 @@
+{
+  "name": "docagent-collab-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node markdown.test.js && node edit.test.js && node persistence.test.js"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "@hocuspocus/server": "^3.4.4",
+    "@hocuspocus/transformer": "^3.4.4",
+    "@tiptap/extension-image": "^3.28.0",
+    "@tiptap/extension-text-align": "^3.28.0",
+    "@tiptap/starter-kit": "^3.28.0",
+    "dotenv": "^17.4.2",
+    "yjs": "^13.6.31"
+  },
+  "private": true
+}

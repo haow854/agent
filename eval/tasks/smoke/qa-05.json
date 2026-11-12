@@ -1,0 +1,15 @@
+{
+  "id": "qa-05",
+  "tags": ["qa"],
+  "seeds": [
+    {"file": "roster.md", "title": "员工名册"},
+    {"file": "budgets.md", "title": "部门年度预算"}
+  ],
+  "scope": {"workspace": "all"},
+  "goal": "结合文档《{{title:0}}》和《{{title:1}}》回答：黄三所在部门的年度预算是多少万元？只回答数字。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "answer_contains", "text": "380"},
+    {"type": "answer_not_contains", "text": "520"}
+  ]
+}

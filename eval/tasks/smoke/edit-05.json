@@ -1,0 +1,13 @@
+{
+  "id": "edit-05",
+  "tags": ["edit"],
+  "seeds": [{"file": "ops_report.md", "title": "运营季度报告"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "把文档《{{title:0}}》里单独出现的“增长”都改成“提升”，但“增长率”这个词一个都不能动。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_count", "doc": 0, "text": "增长率", "min": 2, "max": 2},
+    {"type": "doc_count", "doc": 0, "text": "提升", "min": 4, "max": 4},
+    {"type": "doc_count", "doc": 0, "text": "增长", "min": 2, "max": 2}
+  ]
+}

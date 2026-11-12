@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.javaee.agentservice.session.SessionSummaryMapper">
+
+    <insert id="upsert">
+        INSERT INTO agent_session_summary (session_id, summary_text, covered_to)
+        VALUES (#{summary.sessionId}, #{summary.summaryText}, #{summary.coveredTo})
+        ON DUPLICATE KEY UPDATE
+            summary_text = VALUES(summary_text),
+            covered_to = VALUES(covered_to)
+    </insert>
+
+</mapper>

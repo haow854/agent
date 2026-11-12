@@ -1,0 +1,23 @@
+{
+  "id": "conv-12",
+  "tags": ["conv", "edit", "create"],
+  "seeds": [],
+  "approval": "confirm",
+  "timeoutSeconds": 600,
+  "parts": [
+    {"goal": "新建一篇文档《巡检手册》，包含三个小节：一、准备，二、执行，三、复盘，每节正文先写“待补充”。", "scope": {"workspace": "all"}},
+    {"goal": "“一、准备”这节的正文填成：核对工单与备件清单。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "“三、复盘”这节的正文填成：当日提交巡检小结。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "把“二、执行”整节删掉，剩下两节保持原有顺序。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "在文档末尾加一行：全文共两节。", "scope": {"workspace": "all"}, "sameSession": true}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "created_exists", "titleContains": "巡检手册"},
+    {"type": "created_contains", "text": "核对工单与备件清单"},
+    {"type": "created_contains", "text": "当日提交巡检小结"},
+    {"type": "created_not_contains", "text": "二、执行"},
+    {"type": "created_text_count", "text": "待补充", "min": 0, "max": 0},
+    {"type": "created_regex", "pattern": "(?s)准备[\\s\\S]*复盘[\\s\\S]*全文共两节"}
+  ]
+}

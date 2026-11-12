@@ -1,0 +1,18 @@
+{
+  "id": "create-07",
+  "tags": ["create"],
+  "seeds": [
+    {"file": "event_plan.md", "title": "发布会筹备方案"},
+    {"file": "event_correction.md", "title": "发布会时间更正通知"}
+  ],
+  "scope": {"workspace": "all"},
+  "goal": "根据文档《{{title:0}}》和《{{title:1}}》，新建一篇标题为《发布会对外通稿》的文档，一段话说清时间、地点和三个议程环节。注意两篇文档信息有出入时以最终口径为准。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "created_exists", "titleContains": "对外通稿"},
+    {"type": "created_regex", "pattern": "6\\s*月\\s*5\\s*日"},
+    {"type": "created_not_contains", "text": "5 月 30 日"},
+    {"type": "created_contains", "text": "报告厅"},
+    {"type": "created_contains", "text": "产品演示"}
+  ]
+}

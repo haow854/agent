@@ -1,0 +1,12 @@
+{
+  "id": "edit-07",
+  "tags": ["edit"],
+  "seeds": [{"file": "strategy_doc.md", "title": "平台治理方案"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "把文档《{{title:0}}》里的小节标题“风控策略”改成“风险控制策略”，并把文中所有引用这个小节名的地方一并同步改掉。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_count", "doc": 0, "text": "风险控制策略", "min": 3, "max": 3},
+    {"type": "doc_count", "doc": 0, "text": "风控策略", "min": 0, "max": 0}
+  ]
+}

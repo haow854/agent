@@ -1,0 +1,20 @@
+{
+  "id": "conv-09",
+  "tags": ["conv", "long", "qa"],
+  "seeds": [
+    {"file": "long/long04_report.md", "title": "全年指标核对报告"},
+    {"file": "memo.md", "title": "周报备忘"}
+  ],
+  "timeoutSeconds": 900,
+  "parts": [
+    {"goal": "文档《{{title:0}}》的第三章讲的是哪个指标？只说指标名。", "scope": {"workspace": "current", "doc": 0}},
+    {"goal": "它在正文里给出的数字是多少？", "scope": {"workspace": "current", "doc": 0}, "sameSession": true},
+    {"goal": "把这个指标名和正文数字记进文档《{{title:1}}》，一行就够。", "scope": {"workspace": "current", "doc": 1}, "sameSession": true}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_contains", "doc": 1, "text": "西北大区履约时效"},
+    {"type": "doc_contains", "doc": 1, "text": "21.6"},
+    {"type": "doc_contains", "doc": 1, "text": "支付对账模块"}
+  ]
+}

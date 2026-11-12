@@ -1,0 +1,20 @@
+{
+  "id": "create-04",
+  "tags": ["create"],
+  "seeds": [
+    {"file": "namelist_v1.md", "title": "项目组名单三月版"},
+    {"file": "namelist_v2.md", "title": "项目组名单八月版"}
+  ],
+  "scope": {"workspace": "all"},
+  "goal": "对比文档《{{title:0}}》和《{{title:1}}》，新建一篇标题为《名单变更》的文档，分“新增”和“移除”两个小节列出八月版相对三月版的人员变化。没有变化的人一个都不要出现在新文档里。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "created_exists", "titleContains": "名单变更"},
+    {"type": "created_regex", "pattern": "新增[\\s\\S]{0,120}韩甲"},
+    {"type": "created_regex", "pattern": "新增[\\s\\S]{0,120}杨乙"},
+    {"type": "created_regex", "pattern": "移除[\\s\\S]{0,120}冯六"},
+    {"type": "created_regex", "pattern": "移除[\\s\\S]{0,120}褚七"},
+    {"type": "created_not_contains", "text": "陈一"},
+    {"type": "created_not_contains", "text": "蒋九"}
+  ]
+}

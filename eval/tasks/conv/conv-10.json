@@ -1,0 +1,20 @@
+{
+  "id": "conv-10",
+  "tags": ["conv", "memory"],
+  "seeds": [
+    {"file": "memo.md", "title": "周报备忘"},
+    {"file": "notes.md", "title": "版本笔记"}
+  ],
+  "cleanupMemory": true,
+  "parts": [
+    {"goal": "记住我的长期偏好：给我的文档新增小节时，小节标题以【记】开头。记到长期记忆里。", "scope": {"workspace": "all"}},
+    {"goal": "在文档《{{title:0}}》里新增一个小节，内容是：本周完成对账重构收尾。", "scope": {"workspace": "current", "doc": 0}, "sameSession": true},
+    {"goal": "在文档《{{title:1}}》里新增一个小节，内容是：桌面端升级窗口定在月底。", "scope": {"workspace": "current", "doc": 1}}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_contains", "doc": 0, "text": "【记】"},
+    {"type": "doc_contains", "doc": 1, "text": "【记】"},
+    {"type": "memory_contains", "text": "【记】"}
+  ]
+}

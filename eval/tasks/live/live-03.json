@@ -1,0 +1,13 @@
+{
+  "id": "live-03",
+  "tags": ["live", "web"],
+  "seeds": [],
+  "scope": {"workspace": "all"},
+  "goal": "阅读 https://www.rfc-editor.org/rfc/rfc9113.txt （HTTP/2 协议全文，非常长，一次抓不完，用 start_index 分段往后抓）。从文中错误码定义部分找到 FLOW_CONTROL_ERROR 对应的数值代码，把数值和它在文中的含义写在回答里。必须以页面原文为准，不要凭记忆回答。",
+  "timeoutSeconds": 600,
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "tool_called", "name": "web_fetch", "min": 2},
+    {"type": "answer_regex", "pattern": "0x0?3|(?<![0-9.])3(?![0-9.])"}
+  ]
+}

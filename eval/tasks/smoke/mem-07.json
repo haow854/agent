@@ -1,0 +1,16 @@
+{
+  "id": "mem-07",
+  "tags": ["memory"],
+  "seeds": [{"file": "memo.md", "title": "周报备忘"}],
+  "cleanupMemory": true,
+  "parts": [
+    {"goal": "记住我的长期偏好，注意条件：只有我让你“新增小节”时，小节标题才以【补】开头；改写已有内容时不要加任何前缀。记到长期记忆。", "scope": {"workspace": "all"}},
+    {"goal": "把文档《{{title:0}}》里“风险与求助”这一节的正文改写得更简洁一些，意思不变。", "scope": {"workspace": "current", "doc": 0}}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_count", "doc": 0, "text": "【补】", "min": 0, "max": 0},
+    {"type": "doc_contains", "doc": 0, "text": "风险与求助"},
+    {"type": "doc_contains", "doc": 0, "text": "支付对账模块"}
+  ]
+}

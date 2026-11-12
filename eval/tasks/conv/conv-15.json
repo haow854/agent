@@ -1,0 +1,26 @@
+{
+  "id": "conv-15",
+  "tags": ["conv", "long-dialog", "edit"],
+  "seeds": [{"file": "memo.md", "title": "周报备忘"}],
+  "timeoutSeconds": 600,
+  "parts": [
+    {"goal": "新建文档《接口文档》，先建一个“鉴权”小节，正文写：采用令牌鉴权，细节后续补充。", "scope": {"workspace": "all"}},
+    {"goal": "切去别的事：《{{title:0}}》里本周遗留了几个待补的边界场景？直接回答。", "scope": {"workspace": "current", "doc": 0}, "sameSession": true},
+    {"goal": "在《{{title:0}}》“本周进展”一节末尾加一句：联调环境已申请。", "scope": {"workspace": "current", "doc": 0}, "sameSession": true},
+    {"goal": "回到《接口文档》，“鉴权”一节接着补一句：令牌有效期为两小时。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "再回《{{title:0}}》：风控接口的文档如果周三还拿不到会影响什么？直接回答。", "scope": {"workspace": "current", "doc": 0}, "sameSession": true},
+    {"goal": "《接口文档》加一个“限流”小节，正文写：单客户端每分钟不超过 60 次调用。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "刚才“鉴权”里写的令牌有效期改一下，两小时太短，改成四小时。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "在《接口文档》末尾加一个“变更记录”小节，把本次会话里对这篇文档做过的主要改动按顺序列出来，至少要包括：建立鉴权节、补充并修改令牌有效期、新增限流节。", "scope": {"workspace": "all"}, "sameSession": true},
+    {"goal": "最后通读《接口文档》，确认有效期只出现四小时的版本，没问题回复确认。", "scope": {"workspace": "all"}, "sameSession": true}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "created_exists", "titleContains": "接口文档"},
+    {"type": "created_contains", "text": "四小时"},
+    {"type": "created_regex", "pattern": "(?s)\\A(?:(?!两小时).)*变更记录"},
+    {"type": "created_regex", "pattern": "每分钟不超过\\s*60\\s*次"},
+    {"type": "created_regex", "pattern": "变更记录[\\s\\S]*(鉴权|有效期)[\\s\\S]*(限流|60)"},
+    {"type": "doc_contains", "doc": 0, "text": "联调环境已申请"}
+  ]
+}

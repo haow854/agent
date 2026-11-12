@@ -1,0 +1,13 @@
+{
+  "id": "web-03",
+  "tags": ["web"],
+  "seeds": [{"file": "software_ledger.md", "title": "软件台账"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "查一下 TeamSync 官方目前的最新正式版本号，把台账《{{title:0}}》里 TeamSync 的在用版本记录更新成这个版本号。注意只认官方发布的版本，别被过时的评测文章带偏。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "tool_called", "name": "web_search", "min": 1},
+    {"type": "doc_contains", "doc": 0, "text": "5.2"},
+    {"type": "doc_not_contains", "doc": 0, "text": "5.0，"}
+  ]
+}

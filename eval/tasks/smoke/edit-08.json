@@ -1,0 +1,15 @@
+{
+  "id": "edit-08",
+  "tags": ["edit"],
+  "seeds": [{"file": "datelines.md", "title": "里程碑存档"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "把文档《{{title:0}}》里所有 2025 年的条目整行删掉，2026 年的条目原样保留。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_not_contains", "doc": 0, "text": "2025-"},
+    {"type": "doc_contains", "doc": 0, "text": "2026-01-12 立项评审通过"},
+    {"type": "doc_contains", "doc": 0, "text": "2026-02-09 需求冻结"},
+    {"type": "doc_contains", "doc": 0, "text": "2026-04-18 首个内测版本发布"},
+    {"type": "doc_contains", "doc": 0, "text": "2026-07-15 正式版发布"}
+  ]
+}

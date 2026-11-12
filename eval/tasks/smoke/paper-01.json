@@ -1,0 +1,20 @@
+{
+  "id": "paper-01",
+  "tags": ["paper", "create"],
+  "seeds": [
+    {"file": "paper_attention.md", "title": "论文卡片Attention"},
+    {"file": "paper_bert.md", "title": "论文卡片BERT"},
+    {"file": "paper_rag.md", "title": "论文卡片RAG"}
+  ],
+  "scope": {"workspace": "all"},
+  "goal": "我的文档库里有三篇标题以“论文卡片”开头的文档。新建一篇标题为《论文对比表》的文档，内容是一个 Markdown 表格，三列表头为“论文”“年份”“arXiv 编号”，三篇各一行，按年份从早到晚排。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "created_exists", "titleContains": "论文对比表"},
+    {"type": "created_regex", "pattern": "\\|\\s*论文\\s*\\|\\s*年份\\s*\\|\\s*arXiv"},
+    {"type": "created_regex", "pattern": "Attention[^\\n]*2017[^\\n]*1706\\.03762"},
+    {"type": "created_regex", "pattern": "BERT[^\\n]*2018[^\\n]*1810\\.04805"},
+    {"type": "created_regex", "pattern": "(Retrieval|RAG)[^\\n]*2020[^\\n]*2005\\.11401"},
+    {"type": "created_regex", "pattern": "1706\\.03762[\\s\\S]*1810\\.04805[\\s\\S]*2005\\.11401"}
+  ]
+}

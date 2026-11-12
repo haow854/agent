@@ -1,0 +1,23 @@
+{
+  "id": "create-05",
+  "tags": ["create"],
+  "seeds": [
+    {"file": "faq_a.md", "title": "常见问题账号篇"},
+    {"file": "faq_b.md", "title": "常见问题协作篇"}
+  ],
+  "scope": {"workspace": "all"},
+  "goal": "把文档《{{title:0}}》和《{{title:1}}》合并成一篇标题为《常见问题总集》的新文档，保留全部问题和答案，原问题的文字不要改写；两篇重复的问题只保留一份，一个都不能重复，也一个都不能漏。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "created_exists", "titleContains": "常见问题总集"},
+    {"type": "created_text_count", "text": "如何重置登录密码", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "发票抬头怎么修改", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "支持哪些导出格式", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "协作者数量有没有上限", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "移动端能否离线查看", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "如何取消自动续费", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "历史版本保留多久", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "如何申请企业发票", "min": 1, "max": 1},
+    {"type": "created_text_count", "text": "数据存储在哪个区域", "min": 1, "max": 1}
+  ]
+}

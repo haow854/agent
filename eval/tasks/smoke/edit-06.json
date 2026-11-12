@@ -1,0 +1,14 @@
+{
+  "id": "edit-06",
+  "tags": ["edit"],
+  "seeds": [{"file": "checklist_doc.md", "title": "发布前检查单"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "把文档《{{title:0}}》检查单里“通知客服值班组”这一项删掉，并把余下条目的编号重新排成连续的 1 到 5。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_not_contains", "doc": 0, "text": "通知客服值班组"},
+    {"type": "doc_contains", "doc": 0, "text": "3. 备份数据库快照"},
+    {"type": "doc_contains", "doc": 0, "text": "5. 更新发布记录页"},
+    {"type": "doc_not_contains", "doc": 0, "text": "6. "}
+  ]
+}

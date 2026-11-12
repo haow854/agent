@@ -1,0 +1,257 @@
+server:
+  port: ${SERVER_PORT:8080}
+  address: ${SERVER_ADDRESS:0.0.0.0}
+  servlet:
+    context-path: /
+
+spring:
+  # 本地跑时从 .env 补齐配置，按 properties 解析（.env 不是 Spring 认识的后缀）。
+  # 真实环境变量优先级高于它，容器里注入的值照旧覆盖。
+  # .env 里待填的键必须注释掉而不是留空——空串是"已解析"，会盖掉下面这些默认值。
+  #
+  # .env 统一放在仓库根目录。两条路径是因为它相对进程工作目录：IDE 起进程时工作目录
+  # 可能是仓库根，也可能是 api/，两处都找一遍，省得配置静默失效而只在下游报一个看不出原因的错。
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
+  application:
+    name: docAgent
+  main:
+    allow-bean-definition-overriding: false
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
+
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:docagent}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${MYSQL_POOL_MAX_SIZE:8}
+      minimum-idle: ${MYSQL_POOL_MIN_IDLE:1}
+      idle-timeout: 30000
+      max-lifetime: 300000
+      connection-timeout: 10000
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: 10000
+      lettuce:
+        pool:
+          max-active: 16
+          max-wait: -1
+          max-idle: 8
+          min-idle: 0
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:admin}
+    password: ${RABBITMQ_PASSWORD:}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    listener:
+      simple:
+        concurrency: 1
+        max-concurrency: 10
+        prefetch: 1
+        auto-startup: true
+        default-requeue-rejected: true
+        missing-queues-fatal: false
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 1024MB
+      max-request-size: 1024MB
+
+  ai:
+    # 对话模型走百炼上托管的 DeepSeek，用 OpenAI 兼容协议。走百炼而不是
+    # api.deepseek.com，是因为百炼在 usage 里回 prompt_tokens_details.cached_tokens，
+    # 而 DeepSeek 自家回的是 prompt_cache_hit_tokens —— 后者 Spring AI 的
+    # OpenAiApi.Usage 不认，反序列化时直接丢掉，缓存命中率会静默变成 0。
+    # 这里是兜底：ai.models.openai 下没有单独配置的 model code 才会用到它。
+    openai:
+      api-key: ${DASHSCOPE_API_KEY:}
+      # 结尾不带 /v1：Spring AI 的 OpenAiApi 自己会拼 /v1/chat/completions，
+      # 这里再写一次就成了 /v1/v1/chat/completions，服务端回 404。
+      base-url: ${DASHSCOPE_COMPATIBLE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.javaee.user.entity,com.javaee.fileservice.entity,com.javaee.documentservice.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    # 走 slf4j 而不是直接打 stdout：StdOutImpl 绕过日志框架，每条 SQL 连同结果集
+    # 无条件刷屏，关不掉也过滤不了。走 slf4j 之后 SQL 落在 DEBUG 级，默认不出现，
+    # 要看时把对应 mapper 包调成 debug 即可。
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:docagentadmin}
+  secret-key: ${MINIO_SECRET_KEY:}
+  bucket-name: ${MINIO_BUCKET:docagent}
+  bucket: ${MINIO_BUCKET:docagent}
+  bucket-permissions: "${MINIO_BUCKET_PERMISSIONS:document=admin,user;documents=admin,user;${MINIO_BUCKET:docagent}=admin,user}"
+  bucket-permission-default-allow: false
+  secure: false
+  url:
+    expiry: 3600
+  delete:
+    confirmation-timeout: 300
+
+file:
+  storage:
+    type: ${FILE_STORAGE_TYPE:minio}
+    local-path: ${FILE_STORAGE_LOCAL_PATH:./data/file-storage}
+    max-size: 1024
+    allowed-types:
+      - image/*
+      - application/pdf
+      - application/msword
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - application/vnd.ms-excel
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      - text/*
+
+ai:
+  session:
+    expiry-hours: ${AI_SESSION_EXPIRY_HOURS:168}
+  async:
+    job-expiry-hours: 24
+  # Agent 读写文档都经协同服务：直接写库会被打开着的编辑器回存覆盖，
+  # 直接读库则会读到尚未回存的旧内容。
+  collab:
+    url: ${COLLAB_URL:http://localhost:1234}
+    # 协同端口浏览器要连所以是暴露的，而 /ai/* 能改任何有读权限的文档。
+    # 两侧必须一致（collab-server 读 COLLAB_AI_SECRET），留空则 /ai/* 全部拒绝。
+    secret: ${COLLAB_AI_SECRET:}
+  agent:
+    # 一个 run 的护栏，不是硬账：过线之后那一轮不再给工具，让模型收尾。
+    max-iterations: 30
+    max-tool-calls: 100
+    approval-expiry-seconds: 300
+    document-list-max: 50
+    # Shorter than the session stream on purpose: a checkpoint names a slice
+    # of that stream, so one outliving it would resume into an empty chain.
+    task-expiry-days: 3
+    recovery-stale-seconds: 120
+    safe-tool-max-attempts: 2
+    safe-tool-retry-backoff-ms: 200
+    # 一次读取的段落数上限。模型靠逐字引用读到的文本来定位改动，
+    # 所以窗口只在这里裁一次——网关再裁一刀会让引用对不上原文。
+    # 必须小于 max-tool-result-chars。
+    document-read-max-chars: 20000
+    # 每个用户每小时能开多少个新 Agent 任务。只拦新任务：审批确认和续接
+    # 是在推进已经开始的任务，拦住它们会让暂停的任务永远做不完。
+    max-tasks-per-hour: 20
+    max-tool-result-chars: 24000
+    # 微压缩：用户离开过一次（会话流里出现超过 after-ms 的断档）之后，走之前那摊
+    # 工具结果的 data 换成占位符，toolName / status 这层信封照留。一直连着干活就
+    # 一条都不动，控体积是 autocompact 的事。时间取自两条记录的 stream id 之差，
+    # 不读挂钟：resume 重建出的链必须和崩之前发出去的是同一条。
+    microcompact-keep-recent-results: 10
+    microcompact-after-ms: 86400000
+    # 自动压缩：链涨到窗口的这个比例，就把更早的轮次折成摘要。量的是即将发出去
+    # 的那个请求，不是这个 run 累计花了多少——两者回答的不是同一个问题。
+    context-window-tokens: 1000000
+    auto-compact-at-ratio: 0.9
+    # Deliberately low, so the estimate overstates and folds early.
+    chars-per-token: 1.5
+    # 子 agent：一次 subagent 调用起一个用完即弃的循环，读文档的开销留在它自己
+    # 的上下文里。max-concurrent 拦的是同时打模型的并发数，也顺带保证 tool-pool
+    # 不会被几个几十秒的子任务占满。
+    # 轮数比工具调用数更能限住成本：读过的原文下一轮就被丢弃，链是常数级，
+    # 所以轮数放宽到够把一篇长文翻完。
+    subagent:
+      max-rounds: 16
+      max-tool-calls: 30
+      max-concurrent: 3
+  # MCP 外部工具。连接在首次调用时才建立：未配置只影响这一个工具，不影响启动和测试。
+  # search 三选一：streamable-url = 远程 Streamable HTTP；url = 远程 SSE；command/args = 本地 stdio。
+  # Tavily 托管（免费 1000 次/月）：streamable-url=https://mcp.tavily.com/mcp/?tavilyApiKey=<key>，
+  #   tool-name=tavily-search，topk-param=max_results
+  # Brave 本地（免费 2000 次/月）：command=npx，args=-y,@modelcontextprotocol/server-brave-search，
+  #   需环境变量 BRAVE_API_KEY，tool-name/topk-param 用默认值
+  mcp:
+    request-timeout-seconds: 20
+    search:
+      streamable-url: ${SEARCH_MCP_STREAMABLE_URL:}
+      url: ${SEARCH_MCP_URL:}
+      command: ${SEARCH_MCP_COMMAND:}
+      args: ${SEARCH_MCP_ARGS:}
+      tool-name: ${SEARCH_MCP_TOOL_NAME:brave_web_search}
+      topk-param: ${SEARCH_MCP_TOPK_PARAM:count}
+    fetch:
+      command: ${MCP_FETCH_COMMAND:uvx}
+      args: ${MCP_FETCH_ARGS:mcp-server-fetch}
+  aiops:
+    metrics:
+      retention-ms: 900000
+      persist-interval-ms: 60000
+    detection:
+      interval-ms: 60000
+      window-ms: 300000
+      latency-p95-threshold-ms: 5000
+      error-rate-threshold: 0.1
+      min-request-count: 10
+    alert:
+      cooldown-ms: 300000
+  models:
+    # 两个模型，都走 OpenAI 协议。分组名 openai 指的是协议不是供应商——
+    # LlmClient 只会说这一种话，两个模型各自连各自的厂商。
+    #
+    # 认不出的 model code 会在建模型时当场报错，而不是落到兜底配置上：旧
+    # checkpoint 里存着已经删掉的 code 时，报错位置就在原因上。
+    openai:
+      deepseek-v4-pro:
+        api-key: ${DASHSCOPE_API_KEY:}
+        # 走百炼而不是 api.deepseek.com：见上面 spring.ai.openai 那段——DeepSeek
+        # 自家回的 prompt_cache_hit_tokens 会被 Spring AI 丢掉，缓存命中率静默变 0。
+        base-url: ${DASHSCOPE_COMPATIBLE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+        # 写死而不是让它落回 model code：这里的 code 是本地的枚举名，发出去的
+        # 是厂商那边的模型名，两者没有理由永远相等。
+        model: ${DASHSCOPE_CHAT_MODEL:deepseek-v4-pro}
+        enabled: true
+      gpt-5.5:
+        api-key: ${OPENAI_API_KEY:}
+        # 结尾不带 /v1：Spring AI 的 OpenAiApi 自己会拼 /v1/chat/completions。
+        base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+        model: ${OPENAI_CHAT_MODEL:gpt-5.5}
+        enabled: true
+
+custom:
+  jwt:
+    secret: ${JWT_SECRET:}
+    header: Authorization
+    prefix: Bearer
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    com.javaee: info
+    org.springframework.security: info
+  # 同时写文件：agent 的逐轮用量是一条随时间展开的曲线，控制台滚过去就没了，
+  # 而判断缓存有没有被写坏，要看的正是相邻两轮之间的关系。
+  file:
+    name: ${LOG_FILE:logs/docAgent.log}

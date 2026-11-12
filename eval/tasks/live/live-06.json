@@ -1,0 +1,14 @@
+{
+  "id": "live-06",
+  "tags": ["live", "web"],
+  "seeds": [],
+  "scope": {"workspace": "all"},
+  "goal": "先用联网搜索找到 PEP 8（Python 官方代码风格指南）的官方页面，再抓取该页面，确认它列出的第一位作者是谁，把作者名和页面链接写在回答里。",
+  "timeoutSeconds": 420,
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "tool_called", "name": "web_search", "min": 1},
+    {"type": "tool_called", "name": "web_fetch", "min": 1},
+    {"type": "answer_contains", "text": "Rossum"}
+  ]
+}

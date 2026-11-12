@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # MySQL 服务
+  mysql:
+    image: mysql:8.0
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == ${DOCAGENT_MANAGER_HOST}
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    command: --max-connections=500
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../api/mysql-schema.sql:/docker-entrypoint-initdb.d/01-docagent-schema.sql:ro
+    networks:
+      - docagent-network
+    ports:
+      - "3306:3306"
+
+  # Redis 集群
+  redis:
+    image: redis:7.0
+    deploy:
+      mode: replicated
+      replicas: 2
+      placement:
+        max_replicas_per_node: 1
+      restart_policy:
+        condition: on-failure
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - docagent-network
+    ports:
+      - "6379:6379"
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3.8-management
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == ${DOCAGENT_NODE1_HOST}
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    networks:
+      - docagent-network
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  # MinIO
+  minio:
+    image: minio/minio
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == ${DOCAGENT_NODE1_HOST}
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - docagent-network
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+networks:
+  docagent-network:
+    external: true
+
+volumes:
+  mysql-data:
+  redis-data:
+  minio-data:

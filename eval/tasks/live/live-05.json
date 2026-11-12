@@ -1,0 +1,12 @@
+{
+  "id": "live-05",
+  "tags": ["live", "web", "paper"],
+  "seeds": [],
+  "scope": {"workspace": "all"},
+  "goal": "阅读网页 https://arxiv.org/abs/2005.11401 ，这篇论文的最后一位作者是谁？把姓名写在回答里。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "tool_called", "name": "web_fetch", "min": 1},
+    {"type": "answer_contains", "text": "Kiela"}
+  ]
+}

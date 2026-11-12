@@ -1,0 +1,19 @@
+{
+  "id": "conv-11",
+  "tags": ["conv", "paper"],
+  "seeds": [
+    {"file": "paper_attention.md", "title": "论文卡片Attention"},
+    {"file": "paper_bert.md", "title": "论文卡片BERT"},
+    {"file": "paper_rag.md", "title": "论文卡片RAG"},
+    {"file": "software_ledger.md", "title": "软件台账"}
+  ],
+  "parts": [
+    {"goal": "我的文档库里有三篇标题以“论文卡片”开头的文档，其中年份最早的是哪一篇？说出篇名和年份。", "scope": {"workspace": "all"}},
+    {"goal": "把它的 arXiv 编号追加记录到文档《{{title:3}}》里。", "scope": {"workspace": "current", "doc": 3}, "sameSession": true}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_contains", "doc": 3, "text": "1706.03762"},
+    {"type": "doc_not_contains", "doc": 3, "text": "1810.04805"}
+  ]
+}

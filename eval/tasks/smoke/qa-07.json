@@ -1,0 +1,12 @@
+{
+  "id": "qa-07",
+  "tags": ["qa"],
+  "seeds": [{"file": "annual_budget.md", "title": "市场预算说明"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "根据文档《{{title:0}}》回答：本年度市场预算全年合计折合多少亿元？只回答数字。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "answer_contains", "text": "0.48"},
+    {"type": "answer_not_contains", "text": "0.36"}
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "mem-06",
+  "tags": ["memory"],
+  "seeds": [
+    {"file": "memo.md", "title": "周报备忘"},
+    {"file": "scoped_a.md", "title": "上线方案说明"}
+  ],
+  "cleanupMemory": true,
+  "parts": [
+    {"goal": "记住我的两条长期偏好：给标题含“周报”的文档新增小节时，小节标题以【周】开头；给标题含“方案”的文档新增小节时，小节标题以【案】开头。都记到长期记忆。", "scope": {"workspace": "all"}},
+    {"goal": "在文档《{{title:0}}》里新增一个小节，内容是：下周例会改到周二上午。", "scope": {"workspace": "current", "doc": 0}}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_contains", "doc": 0, "text": "【周】"},
+    {"type": "doc_not_contains", "doc": 0, "text": "【案】"},
+    {"type": "doc_unchanged", "doc": 1}
+  ]
+}

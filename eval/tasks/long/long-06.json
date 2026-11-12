@@ -1,0 +1,29 @@
+{
+  "id": "long-06",
+  "tags": ["long", "create"],
+  "seeds": [
+    {"file": "long/long06_roster_01.md", "title": "部门花名册分册01"},
+    {"file": "long/long06_roster_02.md", "title": "部门花名册分册02"},
+    {"file": "long/long06_roster_03.md", "title": "部门花名册分册03"},
+    {"file": "long/long06_roster_04.md", "title": "部门花名册分册04"},
+    {"file": "long/long06_roster_05.md", "title": "部门花名册分册05"},
+    {"file": "long/long06_roster_06.md", "title": "部门花名册分册06"},
+    {"file": "long/long06_roster_07.md", "title": "部门花名册分册07"},
+    {"file": "long/long06_roster_08.md", "title": "部门花名册分册08"},
+    {"file": "long/long06_roster_09.md", "title": "部门花名册分册09"},
+    {"file": "long/long06_roster_10.md", "title": "部门花名册分册10"},
+    {"file": "long/long06_budget.md", "title": "部门年度预算总表"}
+  ],
+  "scope": {"workspace": "all"},
+  "goal": "我的文档库里有 10 篇标题以“部门花名册分册”开头的文档和一篇《{{title:10}}》。逐册统计每个部门的实际人数，再结合预算总表，新建一篇标题为《部门人数与预算》的文档，内容是一个 Markdown 表格，三列表头为“部门”“人数”“预算（万元）”，五个部门各一行。人数必须逐人数出来，一个都不能多也不能少。",
+  "timeoutSeconds": 1200,
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "created_exists", "titleContains": "部门人数与预算"},
+    {"type": "created_regex", "pattern": "数据平台部\\s*\\|\\s*9\\s*\\|\\s*380"},
+    {"type": "created_regex", "pattern": "市场部\\s*\\|\\s*8\\s*\\|\\s*520"},
+    {"type": "created_regex", "pattern": "客服部\\s*\\|\\s*7\\s*\\|\\s*210"},
+    {"type": "created_regex", "pattern": "供应链部\\s*\\|\\s*9\\s*\\|\\s*460"},
+    {"type": "created_regex", "pattern": "财务部\\s*\\|\\s*7\\s*\\|\\s*150"}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "conv-07",
+  "tags": ["conv", "web", "live"],
+  "seeds": [{"file": "software_ledger.md", "title": "软件台账"}],
+  "parts": [
+    {"goal": "用联网搜索确认：GPT-3 论文《Language Models are Few-Shot Learners》发表于哪一年？先把年份告诉我。", "scope": {"workspace": "all"}},
+    {"goal": "把刚才查到的这篇论文和年份追加记进文档《{{title:0}}》，格式：论文备案：GPT-3 / 年份。", "scope": {"workspace": "current", "doc": 0}, "sameSession": true}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "tool_called", "name": "web_search", "min": 1},
+    {"type": "doc_contains", "doc": 0, "text": "2020"},
+    {"type": "doc_contains", "doc": 0, "text": "GPT-3"}
+  ]
+}

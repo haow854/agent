@@ -1,0 +1,22 @@
+{
+  "id": "paper-02",
+  "tags": ["paper", "edit"],
+  "seeds": [
+    {"file": "survey_draft.md", "title": "检索与生成技术综述草稿"},
+    {"file": "paper_attention.md", "title": "论文卡片Attention"},
+    {"file": "paper_bert.md", "title": "论文卡片BERT"},
+    {"file": "paper_rag.md", "title": "论文卡片RAG"}
+  ],
+  "scope": {"workspace": "all"},
+  "goal": "文档《{{title:0}}》里引用了三篇论文，但引用格式乱七八糟（作者年份式、编号口语式、方括号式都有）。把三处引用统一改成“[arXiv:编号]”的格式，编号去三篇“论文卡片”文档里核对，别改错对应关系。其他文字不动。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_contains", "doc": 0, "text": "[arXiv:1706.03762]"},
+    {"type": "doc_contains", "doc": 0, "text": "[arXiv:1810.04805]"},
+    {"type": "doc_contains", "doc": 0, "text": "[arXiv:2005.11401]"},
+    {"type": "doc_not_contains", "doc": 0, "text": "Vaswani 等, 2017"},
+    {"type": "doc_not_contains", "doc": 0, "text": "arXiv 1810.04805 号论文"},
+    {"type": "doc_not_contains", "doc": 0, "text": "[Lewis et al. 2020]"},
+    {"type": "doc_contains", "doc": 0, "text": "三条线索共同构成当前检索与生成技术栈的底座"}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "live-01",
+  "tags": ["live", "web", "paper"],
+  "seeds": [],
+  "scope": {"workspace": "all"},
+  "goal": "用联网搜索确认：论文《Attention Is All You Need》首次发表是在哪一年？在回答里给出年份和一个来源链接。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "tool_called", "name": "web_search", "min": 1},
+    {"type": "answer_contains", "text": "2017"},
+    {"type": "answer_regex", "pattern": "https?://"}
+  ]
+}

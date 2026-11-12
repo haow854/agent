@@ -1,0 +1,26 @@
+# ---- 密钥与本地配置 ----
+.env
+.env.*
+!.env.example
+.claude/settings.local.json
+
+# ---- 依赖与构建产物 ----
+node_modules/
+target/
+dist/
+.m2-cache/
+__pycache__/
+
+# ---- 日志与运行数据 ----
+logs/
+*.log
+eval/runs/
+data/
+
+# ---- IDE ----
+.idea/
+.vscode/
+
+# ---- 与本项目无关的本地目录 ----
+BearCode/
+mindbridge-py/

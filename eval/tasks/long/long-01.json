@@ -1,0 +1,19 @@
+{
+  "id": "long-01",
+  "tags": ["long", "qa"],
+  "seeds": [{"file": "long/long01_report.md", "title": "年度经营报告"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "文档《{{title:0}}》正文分十二章，文末有“附录：关键指标汇总表”。请逐章核对正文里出现的指标数字与附录表格是否一致，找出所有正文与附录相互矛盾的指标，把矛盾清单直接写在回答里，每条包含指标名、正文值、附录值。数字一致的指标不要列入清单。",
+  "timeoutSeconds": 900,
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "answer_contains", "text": "西南区履约时效"},
+    {"type": "answer_contains", "text": "华东区复购率"},
+    {"type": "answer_contains", "text": "会员季度流失率"},
+    {"type": "answer_contains", "text": "客服首次响应时长"},
+    {"type": "answer_contains", "text": "仓储盘点差异率"},
+    {"type": "answer_contains", "text": "移动端崩溃率"},
+    {"type": "answer_not_regex", "pattern": "华北区客单价[^。]{0,20}(矛盾|不一致|冲突|对不上)"},
+    {"type": "answer_not_regex", "pattern": "线上支付成功率[^。]{0,20}(矛盾|不一致|冲突|对不上)"}
+  ]
+}

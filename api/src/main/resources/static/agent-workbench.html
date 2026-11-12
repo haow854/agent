@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>docAgent Agent Workbench</title>
+    <style>
+        :root {
+            --primary: #165dff;
+            --success: #00b42a;
+            --warning: #ff7d00;
+            --danger: #f53f3f;
+            --text: #1f2329;
+            --muted: #86909c;
+            --border: #e5e6eb;
+            --bg: #f7f8fa;
+            --card: #ffffff;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; color: var(--text); background: var(--bg); }
+        header { padding: 20px 28px; background: linear-gradient(135deg, #0e42d2, #4080ff); color: #fff; }
+        header h1 { margin: 0; font-size: 22px; }
+        header p { margin: 6px 0 0; opacity: .85; }
+        main { padding: 20px 28px 40px; }
+        section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(31, 35, 41, .04); }
+        h2 { font-size: 16px; margin: 0 0 12px; }
+        h3 { font-size: 14px; margin: 14px 0 8px; }
+        textarea, input, select { width: 100%; padding: 9px 10px; border: 1px solid #c9cdd4; border-radius: 8px; background: #fff; color: var(--text); }
+        textarea { resize: vertical; }
+        button { padding: 8px 12px; border: none; border-radius: 8px; background: var(--primary); color: #fff; cursor: pointer; font-weight: 600; }
+        button.secondary { background: #f2f3f5; color: var(--text); }
+        button.danger { background: var(--danger); }
+        button:disabled { opacity: .5; cursor: not-allowed; }
+        pre { background: #101828; color: #d1e9ff; padding: 12px; border-radius: 8px; overflow: auto; max-height: 360px; font-size: 12px; }
+        .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+        .col-4 { grid-column: span 4; }
+        .col-6 { grid-column: span 6; }
+        .col-8 { grid-column: span 8; }
+        .col-12 { grid-column: span 12; }
+        .row { display: flex; gap: 10px; align-items: center; }
+        .row > * { flex: 1; }
+        .row.compact > * { flex: initial; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+        .card { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: #fff; }
+        .fixed-cards { align-content: start; min-height: 620px; }
+        .fixed-cards.task-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .fixed-cards .card { min-height: 190px; display: flex; flex-direction: column; }
+        .fixed-cards .inline-actions { margin-top: auto; }
+        .card-title { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; font-weight: 700; }
+        .muted { color: var(--muted); font-size: 12px; }
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px; font-size: 12px; background: #eef3ff; color: var(--primary); white-space: nowrap; }
+        .badge.success { background: #e8ffea; color: var(--success); }
+        .badge.warning { background: #fff7e8; color: var(--warning); }
+        .badge.danger { background: #ffece8; color: var(--danger); }
+        .badge.gray { background: #f2f3f5; color: #4e5969; }
+        .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+        .timeline { border-left: 2px solid #dbe7ff; padding-left: 12px; }
+        .timeline-item { position: relative; padding: 8px 0 8px 10px; border-bottom: 1px dashed var(--border); }
+        .timeline-item::before { content: ''; width: 8px; height: 8px; background: var(--primary); border-radius: 50%; position: absolute; left: -17px; top: 14px; }
+        .source { border-left: 3px solid var(--primary); padding: 8px 10px; background: #f5f8ff; border-radius: 6px; margin-bottom: 8px; }
+        .empty { color: var(--muted); padding: 14px; text-align: center; border: 1px dashed var(--border); border-radius: 8px; }
+        .filterbar { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; margin: 8px 0 10px; }
+        .inline-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+        .inline-actions button { padding: 5px 8px; font-size: 12px; }
+        .kpis { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+        .kpi { background: #f5f8ff; border: 1px solid #dbe7ff; border-radius: 8px; padding: 8px 10px; min-width: 92px; }
+        .kpi strong { display: block; font-size: 18px; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        label.muted { display: inline-flex; align-items: center; gap: 6px; }
+        .event-stream { max-height: 240px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+        .event-item { padding: 8px 10px; border-bottom: 1px dashed var(--border); font-size: 12px; }
+        .pagination { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; }
+        .pagination .row { gap: 8px; }
+        .pagination .row > * { flex: initial; }
+        .pagination-info { color: var(--muted); font-size: 12px; }
+        @media (max-width: 960px) { .col-4, .col-6, .col-8 { grid-column: span 12; } }
+        @media (max-width: 720px) {
+            .fixed-cards.task-cards { grid-template-columns: 1fr; min-height: auto; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<header>
+    <h1>docAgent Agent Workbench</h1>
+    <p>统一查看工具能力、Agent 计划执行、审批闭环与任务历史。</p>
+</header>
+<main>
+    <section>
+        <div class="row">
+            <div>
+                <h2>工作台总览</h2>
+                <div id="overview" class="muted">点击刷新加载当前用户和任务概览。</div>
+                <div id="overviewKpis" class="kpis"></div>
+            </div>
+            <div>
+                <button onclick="loadOverview()">刷新总览</button>
+                <button class="secondary" onclick="connectProgressSocket()">连接实时进度</button>
+                <label class="muted" style="margin-top:8px;">
+                    <input id="autoRefresh" type="checkbox" onchange="toggleAutoRefresh()" />
+                    自动刷新（5s）
+                </label>
+                <div id="refreshStatus" class="muted">未开启自动刷新</div>
+                <div id="wsStatus" class="muted">WebSocket 未连接</div>
+            </div>
+        </div>
+        <h3>实时事件流</h3>
+        <div id="eventStream" class="event-stream"><div class="empty">连接后显示 Agent 进度事件</div></div>
+    </section>
+
+    <div class="grid">
+        <section class="col-4">
+            <h2>1. 工具能力 Schema</h2>
+            <div class="toolbar">
+                <button onclick="loadTools()">加载工具列表</button>
+                <button class="secondary" onclick="toggleRaw('toolsRaw')">Raw</button>
+            </div>
+            <div id="tools" class="cards"></div>
+            <pre id="toolsRaw" style="display:none;">{}</pre>
+        </section>
+
+        <section class="col-8">
+            <h2>2. 执行 Agent 任务</h2>
+            <textarea id="task" rows="3" placeholder="例如：阅读当前文档，总结实现方案并列出待办事项"></textarea>
+            <div class="row" style="margin-top: 8px;">
+                <select id="returnIntermediateSteps">
+                    <option value="true">返回中间步骤</option>
+                    <option value="false">隐藏中间步骤</option>
+                </select>
+            </div>
+            <div class="row" style="margin-top: 8px;">
+                <input id="targetDocumentId" placeholder="业务文档ID(documentId)，优先写回文档内容" />
+                <input id="objectName" placeholder="MinIO对象名(objectName)，如 report.txt" />
+            </div>
+            <div class="row" style="margin-top: 8px;">
+                <input id="bucketName" placeholder="存储桶(bucketName)，默认 docagent" value="docagent" />
+                <select id="writeMode" style="display:none;">
+                    <option value="overwrite">覆盖写入</option>
+                    <option value="append">追加写入</option>
+                </select>
+            </div>
+            <div class="row" style="margin-top: 8px;">
+                <label class="muted"><input type="checkbox" id="directWriteToFile" onchange="onWriteModeToggle()" /> 直接将AI输出写入到文档或文件</label>
+            </div>
+            <div class="toolbar">
+                <button id="btnRun" onclick="runAgent()">执行</button>
+                <button class="secondary" onclick="loadTasks()">刷新任务历史</button>
+                <button id="btnContinue" class="warning" style="background:var(--warning);display:none;" onclick="submitContinueActionRequired()">补充信息并继续执行</button>
+            </div>
+            <div id="runSummary" class="muted">尚未执行任务。</div>
+            <h3>执行步骤（实际工具调用）</h3>
+            <div id="stepCards" class="cards"></div>
+            <h3>产物</h3>
+            <div id="artifacts" class="timeline"></div>
+            <h3>用量</h3>
+            <div id="usage" class="muted"></div>
+            <pre id="planOutput">{}</pre>
+        </section>
+    </div>
+
+    <div class="grid">
+        <section class="col-4">
+            <h2>3. 危险操作审批</h2>
+            <div id="pendingList" class="timeline"></div>
+            <div class="toolbar">
+                <button onclick="confirmApproval()">全部批准并继续</button>
+                <button class="secondary" onclick="cancelApproval()">拒绝（取消任务）</button>
+            </div>
+            <pre id="approvalOutput">{}</pre>
+        </section>
+
+        <section class="col-8">
+            <h2>4. 任务历史 / 删除 / 回退</h2>
+            <div class="row">
+                <input id="taskId" placeholder="taskId" />
+            </div>
+            <div class="filterbar">
+                <input id="taskFilter" placeholder="按任务/taskId/原因筛选" oninput="renderTasks()" />
+                <select id="taskStatusFilter" onchange="renderTasks()">
+                    <option value="">全部状态</option>
+                    <option value="success">success</option>
+                    <option value="action_required">action_required</option>
+                    <option value="error">error</option>
+                    <option value="cancelled">cancelled</option>
+                </select>
+                <button class="secondary" onclick="clearTaskFilters()">清空筛选</button>
+            </div>
+            <div class="toolbar">
+                <button onclick="loadTasks()">加载历史</button>
+                <button class="secondary" onclick="loadTaskById()">查询任务</button>
+                <button class="danger" onclick="cancelTask()">删除任务</button>
+            </div>
+            <div id="tasks" class="cards fixed-cards task-cards"></div>
+            <div id="taskPagination" class="pagination"></div>
+            <pre id="taskOutput">{}</pre>
+        </section>
+    </div>
+
+</main>
+
+<script>
+const baseUrl = '/api/ai/agent';
+let lastRun = null;
+let lastTools = [];
+let lastTasks = [];
+let autoRefreshTimer = null;
+let stompClient = null;
+let progressEvents = [];
+const PAGE_SIZE = 6;
+let taskPage = 1;
+
+async function api(path, options = {}) {
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    const token = getAccessToken();
+    if (token && !headers.Authorization) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+    const res = await fetch(baseUrl + path, { ...options, headers });
+    const text = await res.text();
+    let payload;
+    try { payload = JSON.parse(text); } catch (e) { payload = { raw: text }; }
+    if (!res.ok) {
+        return { code: res.status, message: res.statusText, data: payload };
+    }
+    return payload;
+}
+
+function getAccessToken() {
+    try {
+        return localStorage.getItem('accessToken')
+            || localStorage.getItem('token')
+            || sessionStorage.getItem('accessToken')
+            || sessionStorage.getItem('token')
+            || '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function dataOf(resp) {
+    return resp && Object.prototype.hasOwnProperty.call(resp, 'data') ? resp.data : resp;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"]/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[s]));
+}
+
+function statusBadge(status) {
+    const s = String(status || 'unknown').toLowerCase();
+    const cls = s.includes('success') || s.includes('indexed') ? 'success' : s.includes('fail') || s.includes('error') ? 'danger' : s.includes('wait') || s.includes('pending') || s.includes('action') ? 'warning' : 'gray';
+    return `<span class="badge ${cls}">${escapeHtml(status || 'unknown')}</span>`;
+}
+
+function toggleRaw(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function formatTime(ms) {
+    if (!ms) return '-';
+    return new Date(Number(ms)).toLocaleString();
+}
+
+function stopCardClick(event) {
+    if (event) event.stopPropagation();
+}
+
+function paginate(items, page) {
+    const total = items.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const currentPage = Math.min(Math.max(1, page || 1), totalPages);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return {
+        currentPage,
+        totalPages,
+        total,
+        items: items.slice(start, start + PAGE_SIZE)
+    };
+}
+
+function renderPagination(targetId, pageInfo) {
+    const el = document.getElementById(targetId);
+    if (!el) return;
+    if (!pageInfo.total) {
+        el.innerHTML = '';
+        return;
+    }
+    const start = (pageInfo.currentPage - 1) * PAGE_SIZE + 1;
+    const end = Math.min(pageInfo.currentPage * PAGE_SIZE, pageInfo.total);
+    el.innerHTML = `
+        <div class="pagination-info">第 ${pageInfo.currentPage}/${pageInfo.totalPages} 页，显示 ${start}-${end} / ${pageInfo.total}</div>
+        <div class="row compact">
+            <button class="secondary" ${pageInfo.currentPage <= 1 ? 'disabled' : ''} onclick="changeTaskPage(${pageInfo.currentPage - 1})">上一页</button>
+            <button class="secondary" ${pageInfo.currentPage >= pageInfo.totalPages ? 'disabled' : ''} onclick="changeTaskPage(${pageInfo.currentPage + 1})">下一页</button>
+        </div>
+    `;
+}
+
+function changeTaskPage(page) {
+    taskPage = page;
+    renderTasks();
+}
+
+function taskMatchesFilter(task) {
+    const text = (document.getElementById('taskFilter')?.value || '').toLowerCase();
+    const status = document.getElementById('taskStatusFilter')?.value || '';
+    const blob = JSON.stringify({
+        taskId: task.taskId,
+        task: task.task,
+        status: task.status,
+        stoppedReason: task.stoppedReason
+    }).toLowerCase();
+    return (!text || blob.includes(text)) && (!status || task.status === status);
+}
+
+function clearTaskFilters() {
+    document.getElementById('taskFilter').value = '';
+    document.getElementById('taskStatusFilter').value = '';
+    taskPage = 1;
+    renderTasks();
+}
+
+function toggleAutoRefresh() {
+    const enabled = document.getElementById('autoRefresh').checked;
+    if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+    }
+    document.getElementById('refreshStatus').textContent = enabled ? '自动刷新已开启' : '未开启自动刷新';
+    if (enabled) {
+        autoRefreshTimer = setInterval(() => {
+            loadTasks();
+        }, 5000);
+    }
+}
+
+function onWriteModeToggle() {
+    const directWrite = document.getElementById('directWriteToFile').checked;
+    document.getElementById('writeMode').style.display = directWrite ? '' : 'none';
+}
+
+function normalizeObjectName(value) {
+    return (value || '').trim().replace(/\s+\./g, '.').replace(/\.\s+/g, '.');
+}
+
+function connectProgressSocket() {
+    if (!window.SockJS || !window.Stomp) {
+        document.getElementById('wsStatus').textContent = 'WebSocket 客户端库未加载，继续使用轮询';
+        return;
+    }
+    if (stompClient && stompClient.connected) {
+        document.getElementById('wsStatus').textContent = 'WebSocket 已连接';
+        return;
+    }
+    document.getElementById('wsStatus').textContent = 'WebSocket 连接中...';
+    const socket = new SockJS('/ws/agent');
+    stompClient = Stomp.over(socket);
+    stompClient.debug = null;
+    stompClient.connect({}, () => {
+        document.getElementById('wsStatus').textContent = 'WebSocket 已连接：/topic/agent/progress';
+        stompClient.subscribe('/topic/agent/progress', message => {
+            try {
+                handleProgressEvent(JSON.parse(message.body));
+            } catch (e) {
+                appendProgressEvent({ eventType: 'parse_error', message: e.message, timestamp: Date.now() });
+            }
+        });
+    }, error => {
+        document.getElementById('wsStatus').textContent = 'WebSocket 连接失败，已降级为轮询';
+        appendProgressEvent({ eventType: 'ws_error', message: String(error), timestamp: Date.now() });
+    });
+}
+
+function handleProgressEvent(event) {
+    appendProgressEvent(event);
+    if (event.taskId) {
+        loadTasks();
+    }
+}
+
+function appendProgressEvent(event) {
+    progressEvents.unshift(event);
+    progressEvents = progressEvents.slice(0, 80);
+    const el = document.getElementById('eventStream');
+    el.innerHTML = progressEvents.map(item => `
+        <div class="event-item">
+            <div>${statusBadge(item.status || item.eventType)} <strong>${escapeHtml(item.eventType || '-')}</strong></div>
+            <div class="muted">${formatTime(item.timestamp)} · task=${escapeHtml(item.taskId || '-')} · progress=${escapeHtml(item.progress || 0)}%</div>
+            <div>${escapeHtml(item.message || '')}</div>
+        </div>
+    `).join('');
+}
+
+async function loadOverview() {
+    const resp = await api('/workbench/overview');
+    const data = dataOf(resp) || {};
+    const tools = data.tools || [];
+    const tasks = data.tasks || [];
+    lastTasks = tasks;
+    const actionRequired = tasks.filter(t => t.status === 'action_required').length;
+    document.getElementById('overview').innerHTML = `
+        当前用户：<strong>${escapeHtml(data.user && data.user.userId)}</strong>
+        <span class="badge gray">${escapeHtml(data.user && data.user.role)}</span>
+        工具 ${tools.length} 个，最近任务 ${tasks.length} 个。
+    `;
+    document.getElementById('overviewKpis').innerHTML = `
+        <div class="kpi"><strong>${tools.length}</strong><span class="muted">工具</span></div>
+        <div class="kpi"><strong>${tasks.length}</strong><span class="muted">Agent 任务</span></div>
+        <div class="kpi"><strong>${actionRequired}</strong><span class="muted">待审批/补充</span></div>
+    `;
+    if (tools.length) renderTools(tools);
+    renderTasks(tasks);
+}
+
+async function loadTools() {
+    const resp = await api('/tools');
+    const list = dataOf(resp) || [];
+    lastTools = list;
+    renderTools(list);
+    document.getElementById('toolsRaw').textContent = JSON.stringify(resp, null, 2);
+}
+
+function renderTools(list) {
+    const el = document.getElementById('tools');
+    if (!list.length) {
+        el.innerHTML = '<div class="empty">暂无工具</div>';
+        return;
+    }
+    el.innerHTML = list.map(t => `
+        <div class="card">
+            <div class="card-title">
+                <span>${escapeHtml(t.name)}</span>
+            </div>
+            <div class="muted">${escapeHtml(t.description || '')}</div>
+            <div style="margin-top:8px;">
+                ${t.requiresApproval ? '<span class="badge danger">需要审批</span>' : ''}
+            </div>
+            <details style="margin-top:8px;"><summary class="muted">参数 schema</summary><pre>${escapeHtml(JSON.stringify(t.parameterSchema || {}, null, 2))}</pre></details>
+        </div>
+    `).join('');
+}
+
+// Names the submission the user is making, not the attempt. Generated before
+// the first send and kept across retries, so a resend joins the task the first
+// attempt started; cleared once the server has one.
+let pendingIdempotencyKey = null;
+
+function newIdempotencyKey() {
+    return crypto.randomUUID
+        ? crypto.randomUUID()
+        : Date.now() + '-' + Math.random().toString(16).slice(2);
+}
+
+async function runAgent() {
+    const task = document.getElementById('task').value.trim();
+    if (!task) return alert('请输入任务');
+    const btnRun = document.getElementById('btnRun');
+    if (btnRun.disabled) return;
+    document.getElementById('task').dataset.continueTaskId = '';
+    document.getElementById('btnContinue').style.display = 'none';
+    const returnIntermediateSteps = document.getElementById('returnIntermediateSteps').value === 'true';
+    const directWrite = document.getElementById('directWriteToFile').checked;
+    const documentId = document.getElementById('targetDocumentId').value.trim();
+    const objectName = normalizeObjectName(document.getElementById('objectName').value.trim());
+    const bucketName = document.getElementById('bucketName').value.trim() || 'docagent';
+    const writeMode = document.getElementById('writeMode').value || 'overwrite';
+    const context = {};
+    if (bucketName) {
+        context.bucketName = bucketName;
+    }
+    if (objectName) {
+        context.objectName = objectName;
+    }
+    if (directWrite) {
+        context.writeMode = writeMode;
+        if (documentId) {
+            context.documentId = documentId;
+            context.reindexAfterWrite = true;
+        } else if (!objectName) {
+            return alert('直接写入模式需要填写业务文档ID或MinIO对象名');
+        }
+    }
+    pendingIdempotencyKey = pendingIdempotencyKey || newIdempotencyKey();
+
+    btnRun.disabled = true;
+    let resp;
+    try {
+        resp = await api('/execute', {
+            method: 'POST',
+            body: JSON.stringify({
+                task, returnIntermediateSteps, context,
+                idempotencyKey: pendingIdempotencyKey
+            })
+        });
+    } finally {
+        btnRun.disabled = false;
+    }
+    // The task exists now, so the next 执行 is new work. A failed send keeps the
+    // key, and retrying it joins whatever the first attempt may have started.
+    pendingIdempotencyKey = null;
+
+    lastRun = dataOf(resp) || {};
+    document.getElementById('planOutput').textContent = JSON.stringify(resp, null, 2);
+    document.getElementById('taskId').value = lastRun.taskId || '';
+    renderRun(lastRun);
+    await loadTasks();
+}
+
+function renderRun(run) {
+    document.getElementById('runSummary').innerHTML = `
+        ${statusBadge(run.status)} taskId: <strong>${escapeHtml(run.taskId || '-')}</strong>
+        · stoppedReason: ${escapeHtml(run.stoppedReason || '-')}
+        · ${escapeHtml(run.durationMs || 0)}ms
+    `;
+    renderSteps(run.steps || []);
+    renderArtifacts(run.artifacts || []);
+    renderUsage(run);
+    renderPending(run);
+}
+
+// A batch stops on everything it needs at once, so the panel is a list and one
+// confirmation settles all of it.
+let pendingInteractions = [];
+
+function renderPending(run) {
+    pendingInteractions = run.pending || [];
+    const el = document.getElementById('pendingList');
+    if (!pendingInteractions.length) {
+        el.innerHTML = '<div class="empty">没有等待处理的操作。</div>';
+        return;
+    }
+    el.innerHTML = pendingInteractions.map(item => `
+        <div class="timeline-item">
+            <div>${statusBadge(item.kind === 'APPROVAL' ? 'action_required' : 'running')}
+                 <strong>${escapeHtml(item.toolName || '-')}</strong></div>
+            <div class="muted">${escapeHtml(item.question || item.toolCallId || '')}</div>
+            ${item.kind === 'ASK_USER' ? `<input class="answer-input" style="width:100%;margin-top:6px;"
+                 data-tool-call-id="${escapeHtml(item.toolCallId || '')}" placeholder="在此回答这个问题" />` : ''}
+            ${item.params ? `<pre>${escapeHtml(JSON.stringify(item.params, null, 2))}</pre>` : ''}
+        </div>
+    `).join('');
+}
+
+function approvedCallIds() {
+    return pendingInteractions
+        .filter(item => item.kind === 'APPROVAL' && item.toolCallId)
+        .map(item => item.toolCallId);
+}
+
+
+function renderSteps(steps) {
+    const el = document.getElementById('stepCards');
+    if (!steps.length) {
+        el.innerHTML = '<div class="empty">暂无工具调用</div>';
+        return;
+    }
+    el.innerHTML = steps.map(step => `
+        <div class="card">
+            <div class="card-title"><span>${escapeHtml(step.id)}</span>${statusBadge(step.status)}</div>
+            <div><strong>${escapeHtml(step.toolName || '-')}</strong></div>
+            <div class="muted">${escapeHtml(step.message || '')}</div>
+            <div style="margin-top:8px;">${step.requiresApproval ? '<span class="badge warning">approval</span>' : ''}<span class="badge gray">${escapeHtml(step.durationMs || 0)}ms</span></div>
+        </div>
+    `).join('');
+}
+
+function renderArtifacts(artifacts) {
+    const el = document.getElementById('artifacts');
+    if (!artifacts.length) {
+        el.innerHTML = '<div class="empty">本次任务没有产生文件。</div>';
+        return;
+    }
+    el.innerHTML = artifacts.map(item => `
+        <div class="timeline-item">
+            <div><strong>${escapeHtml(item.name || item.ref)}</strong> · ${escapeHtml(item.kind)}</div>
+            <div class="muted">${escapeHtml(item.ref)}</div>
+            <div><a href="/api/files/download/${encodeURIComponent(item.ref)}">下载</a></div>
+        </div>
+    `).join('');
+}
+
+function renderUsage(run) {
+    const el = document.getElementById('usage');
+    el.textContent = `${run.iterations || 0} 轮模型调用 · ${run.toolCallCount || 0} 次工具调用`
+        + ` · prompt ${run.promptTokens || 0} / completion ${run.completionTokens || 0} tokens`;
+}
+
+async function confirmApproval() {
+    const callIds = approvedCallIds();
+    if (!callIds.length) return alert('当前没有待审批的操作');
+    const resp = await api('/approvals/confirm', {
+        method: 'POST',
+        body: JSON.stringify({
+            taskId: (lastRun || {}).taskId,
+            approvedToolCallIds: callIds
+        })
+    });
+    document.getElementById('approvalOutput').textContent = JSON.stringify(resp, null, 2);
+    const data = dataOf(resp);
+    if (data) {
+        renderRun(data);
+        document.getElementById('task').dataset.continueTaskId = '';
+        document.getElementById('btnContinue').style.display = 'none';
+    }
+}
+
+async function cancelApproval() {
+    // 拒绝其中任何一个就取消整个任务：模型是把这一批当一步要的。
+    const taskId = (lastRun || {}).taskId;
+    if (!approvedCallIds().length || !taskId) return alert('当前没有待审批的操作');
+    const resp = await api('/tasks/' + encodeURIComponent(taskId) + '/approvals/cancel',
+        { method: 'POST' });
+    document.getElementById('approvalOutput').textContent = JSON.stringify(resp, null, 2);
+}
+
+async function loadTasks() {
+    const resp = await api('/tasks');
+    const list = dataOf(resp) || [];
+    lastTasks = list;
+    renderTasks(list);
+    document.getElementById('taskOutput').textContent = JSON.stringify(resp, null, 2);
+}
+
+async function loadTaskById() {
+    const taskId = document.getElementById('taskId').value.trim();
+    if (!taskId) return alert('请输入 taskId');
+    const resp = await api('/tasks/' + encodeURIComponent(taskId));
+    document.getElementById('taskOutput').textContent = JSON.stringify(resp, null, 2);
+    const data = dataOf(resp) || {};
+    if (data.steps) renderRun(data);
+}
+
+async function cancelTask(taskIdArg) {
+    const taskId = taskIdArg || document.getElementById('taskId').value.trim();
+    if (!taskId) return;
+    const resp = await api('/tasks/' + encodeURIComponent(taskId), { method: 'DELETE' });
+    document.getElementById('taskOutput').textContent = JSON.stringify(resp, null, 2);
+    if (document.getElementById('task').dataset.continueTaskId === taskId) {
+        document.getElementById('task').dataset.continueTaskId = '';
+        document.getElementById('btnContinue').style.display = 'none';
+    }
+    await loadTasks();
+}
+
+function renderTasks(list = lastTasks) {
+    lastTasks = list || [];
+    const el = document.getElementById('tasks');
+    const filtered = lastTasks.filter(taskMatchesFilter);
+    const pageInfo = paginate(filtered, taskPage);
+    taskPage = pageInfo.currentPage;
+    if (!filtered.length) {
+        el.innerHTML = '<div class="empty">暂无任务</div>';
+        renderPagination('taskPagination', pageInfo);
+        return;
+    }
+    el.innerHTML = pageInfo.items.map(t => {
+        const answer = (t.answer || '').slice(0, 120);
+        // 回退不限于失败的任务——问错了问题的成功任务一样要能砍掉重问。
+        const isActionRequired = t.status === 'action_required';
+        const hasApprovalToken = (t.pending || [])
+                .some(p => p.kind === 'APPROVAL');
+        return `
+            <div class="card" onclick="selectTask('${escapeHtml(t.taskId || '')}')">
+                <div class="card-title"><span>${escapeHtml((t.task || '').slice(0, 60))}</span>${statusBadge(t.status)}</div>
+                <div class="muted mono">taskId: ${escapeHtml(t.taskId)}</div>
+                <div class="muted">${formatTime(t.savedAt)} · ${escapeHtml(t.durationMs || 0)}ms</div>
+                <div class="muted">stoppedReason: ${escapeHtml(t.stoppedReason || '-')}</div>
+                <div style="margin-top:8px;"><span class="badge gray">steps ${(t.steps || []).length}</span><span class="badge gray">tools ${escapeHtml(t.toolCallCount || 0)}</span></div>
+                <div class="inline-actions">
+                    <button class="secondary" onclick="stopCardClick(event); selectTask('${escapeHtml(t.taskId || '')}')">查看</button>
+                    <button class="danger" onclick="stopCardClick(event); cancelTask('${escapeHtml(t.taskId || '')}')">删除</button>
+                    ${isActionRequired ? `<button onclick="stopCardClick(event); continueActionRequired('${escapeHtml(t.taskId || '')}')">补充并继续</button>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+    renderPagination('taskPagination', pageInfo);
+}
+
+function continueActionRequired(taskId) {
+    const task = lastTasks.find(t => t.taskId === taskId);
+    if (!task) return alert('未找到该任务');
+    document.getElementById('taskId').value = taskId;
+    document.getElementById('task').value = task.task || '';
+    document.getElementById('task').dataset.continueTaskId = taskId;
+    document.getElementById('btnContinue').style.display = '';
+    renderPending(task);
+    if ((task.pending || []).length) {
+        document.getElementById('approvalOutput').textContent = JSON.stringify({
+            message: '任务正在等待用户处理；审批请用上方按钮，补充信息请在下方每个问题的输入框里回答后点击"补充信息并继续执行"',
+            taskId: taskId,
+            originalTask: task.task,
+            pending: task.pending
+        }, null, 2);
+    }
+    document.getElementById('runSummary').innerHTML = `
+        <span class="badge warning">补充模式</span>
+        正在对 taskId=<strong>${escapeHtml(taskId)}</strong> 的任务补充信息，请在"待处理"里逐个回答后点击继续。
+    `;
+    document.getElementById("stepCards").innerHTML = "";
+    document.getElementById('artifacts').innerHTML = '';
+    document.getElementById('usage').textContent = '';
+    document.getElementById('planOutput').textContent = JSON.stringify({ continueTaskId: taskId, originalTask: task.task, status: task.status }, null, 2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function submitContinueActionRequired() {
+    const taskId = document.getElementById('taskId').value.trim();
+    if (!taskId) return alert('请输入 taskId');
+
+    const userInputs = {};
+    document.querySelectorAll('#pendingList .answer-input').forEach(input => {
+        const answer = input.value.trim();
+        if (input.dataset.toolCallId && answer) {
+            userInputs[input.dataset.toolCallId] = answer;
+        }
+    });
+    if (!Object.keys(userInputs).length) return alert('请在待处理问题下方填写回答');
+
+    const resp = await api('/tasks/' + encodeURIComponent(taskId) + '/continue', {
+        method: 'POST',
+        body: JSON.stringify({ userInputs })
+    });
+    document.getElementById('approvalOutput').textContent = JSON.stringify(resp, null, 2);
+    const data = dataOf(resp);
+    if (data) {
+        renderRun(data);
+        document.getElementById('task').dataset.continueTaskId = '';
+        document.getElementById('btnContinue').style.display = 'none';
+        document.getElementById('runSummary').innerHTML = (document.getElementById('runSummary').innerHTML || '') + ' <span class="badge success">已提交补充</span>';
+    }
+    await loadTasks();
+}
+
+function selectTask(taskId) {
+    document.getElementById('taskId').value = taskId;
+    const task = lastTasks.find(t => t.taskId === taskId);
+    if (task && task.status === 'action_required') {
+        document.getElementById('task').value = task.task || '';
+        document.getElementById('task').dataset.continueTaskId = taskId;
+        document.getElementById('btnContinue').style.display = '';
+        renderPending(task);
+    } else {
+        document.getElementById('btnContinue').style.display = 'none';
+    }
+    loadTaskById();
+}
+
+loadOverview();
+</script>
+</body>
+</html>

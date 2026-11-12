@@ -1,0 +1,12 @@
+{
+  "id": "qa-03",
+  "tags": ["qa"],
+  "seeds": [{"file": "member_terms.md", "title": "会员服务条款"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "根据文档《{{title:0}}》回答：条款里对设备保修年限是怎么规定的？请把答案直接写在回复里。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "answer_contains", "any": ["没有", "未提及", "未找到", "未规定", "并未", "没提", "无相关"]},
+    {"type": "answer_not_regex", "pattern": "保修.{0,8}[0-9一二三四五]\\s*年"}
+  ]
+}

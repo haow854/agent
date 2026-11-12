@@ -1,0 +1,13 @@
+{
+  "id": "live-02",
+  "tags": ["live", "web", "paper"],
+  "seeds": [{"file": "software_ledger.md", "title": "软件台账"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "阅读网页 https://arxiv.org/abs/1810.04805 ，把这篇论文的第一作者姓氏和 arXiv 编号追加记录到文档《{{title:0}}》末尾，格式：论文备案：作者姓氏 / 编号。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "tool_called", "name": "web_fetch", "min": 1},
+    {"type": "doc_contains", "doc": 0, "text": "Devlin"},
+    {"type": "doc_contains", "doc": 0, "text": "1810.04805"}
+  ]
+}

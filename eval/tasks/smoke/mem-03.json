@@ -1,0 +1,16 @@
+{
+  "id": "mem-03",
+  "tags": ["memory"],
+  "seeds": [{"file": "memo.md", "title": "周报备忘"}],
+  "cleanupMemory": true,
+  "parts": [
+    {"goal": "记住我的两条长期偏好，都要记到长期记忆里：第一，给我的文档新增小节时，小节标题必须以【补】开头；第二，新增小节的正文末尾必须单独加一行“——完”。", "scope": {"workspace": "all"}},
+    {"goal": "在文档《{{title:0}}》里新增一个小节，内容是：数据平台部下周三停机维护两小时。", "scope": {"workspace": "current", "doc": 0}}
+  ],
+  "checks": [
+    {"type": "doc_contains", "doc": 0, "text": "【补】"},
+    {"type": "doc_contains", "doc": 0, "text": "——完"},
+    {"type": "doc_contains", "doc": 0, "text": "停机维护"},
+    {"type": "task_status", "expect": "success"}
+  ]
+}

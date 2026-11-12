@@ -1,0 +1,4013 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "docAgent API",
+    "description": "docAgent系统的API文档，用于调试和测试接口",
+    "version": "1.0"
+  },
+  "tags": [
+    {
+      "name": "文档管理",
+      "description": "文档创建、更新、删除、查询、版本控制等接口"
+    },
+    {
+      "name": "异步AI处理",
+      "description": "通过RabbitMQ异步执行AI模型请求"
+    },
+    {
+      "name": "文档批注",
+      "description": "文档批注管理接口"
+    },
+    {
+      "name": "AI Agent",
+      "description": "AI Agent相关接口"
+    },
+    {
+      "name": "文档评论",
+      "description": "文档评论管理接口"
+    },
+    {
+      "name": "用户管理",
+      "description": "用户登录、注册、信息管理等接口"
+    },
+    {
+      "name": "AI处理",
+      "description": "可用模型列表"
+    },
+    {
+      "name": "文件元数据",
+      "description": "文件元数据查询接口"
+    },
+    {
+      "name": "AIOps",
+      "description": "系统监控、故障检测、故障处理接口"
+    },
+    {
+      "name": "文件管理",
+      "description": "文件上传、下载、删除、分片等核心接口"
+    }
+  ],
+  "paths": {
+    "/api/files/{fileId}/rename": {
+      "put": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "文件重命名",
+        "description": "重命名指定文件",
+        "operationId": "rename",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "description": "文件ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "newName",
+            "in": "query",
+            "description": "新文件名",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/{fileId}/move": {
+      "put": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "文件移动",
+        "description": "移动文件到指定目录",
+        "operationId": "move",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "description": "文件ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetPath",
+            "in": "query",
+            "description": "目标目录",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/{fileId}/copy": {
+      "put": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "文件复制",
+        "description": "复制文件到指定目录",
+        "operationId": "copy",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "description": "文件ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetPath",
+            "in": "query",
+            "description": "目标目录",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}": {
+      "get": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "获取文档详情",
+        "description": "根据文档ID获取文档详细信息",
+        "operationId": "getById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultDocumentVO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "更新文档",
+        "description": "更新文档内容，自动保存历史版本",
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentUpdateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultDocumentVO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "删除文档",
+        "description": "软删除文档，将文档状态标记为已删除",
+        "operationId": "delete_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/ydoc": {
+      "get": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "获取协同状态",
+        "description": "读取文档的 Y.Doc 二进制状态，未保存过返回 404",
+        "operationId": "getYdocState",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "保存协同状态",
+        "description": "保存文档的 Y.Doc 二进制状态",
+        "operationId": "saveYdocState",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "byte"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{documentId}/annotations/{annotationId}": {
+      "get": {
+        "tags": [
+          "文档批注"
+        ],
+        "summary": "获取批注详情",
+        "description": "获取指定批注的详情",
+        "operationId": "getAnnotation",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "annotationId",
+            "in": "path",
+            "description": "批注ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAnnotationVO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "文档批注"
+        ],
+        "summary": "更新批注",
+        "description": "更新指定批注",
+        "operationId": "updateAnnotation",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "annotationId",
+            "in": "path",
+            "description": "批注ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnotationCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "文档批注"
+        ],
+        "summary": "删除批注",
+        "description": "删除指定批注",
+        "operationId": "deleteAnnotation",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "annotationId",
+            "in": "path",
+            "description": "批注ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/register": {
+      "post": {
+        "tags": [
+          "用户管理"
+        ],
+        "summary": "用户注册",
+        "description": "创建新用户，返回用户信息",
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultUserVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/refresh": {
+      "post": {
+        "tags": [
+          "用户管理"
+        ],
+        "summary": "刷新令牌",
+        "description": "使用刷新令牌获取新的访问令牌",
+        "operationId": "refreshToken",
+        "parameters": [
+          {
+            "name": "refreshToken",
+            "in": "query",
+            "description": "刷新令牌",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/logout": {
+      "post": {
+        "tags": [
+          "用户管理"
+        ],
+        "summary": "用户登出",
+        "description": "用户登出操作",
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/login": {
+      "post": {
+        "tags": [
+          "用户管理"
+        ],
+        "summary": "用户登录",
+        "description": "根据用户名和密码进行登录，返回访问令牌和刷新令牌",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultLoginVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/upload": {
+      "post": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "单文件上传",
+        "description": "上传单个文件到服务器",
+        "operationId": "upload",
+        "parameters": [
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultMapStringString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/upload-multiple": {
+      "post": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "多文件上传",
+        "description": "上传多个文件到服务器",
+        "operationId": "uploadMultiple",
+        "parameters": [
+          {
+            "name": "files",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/upload-chunk": {
+      "post": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "分片上传",
+        "description": "大文件分片上传",
+        "operationId": "uploadChunk",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "chunkIndex",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "totalChunks",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "chunk"
+                ],
+                "type": "object",
+                "properties": {
+                  "chunk": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/merge-chunk": {
+      "post": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "分片合并",
+        "description": "合并文件分片",
+        "operationId": "mergeChunk",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "query",
+            "description": "文件唯一标识",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileName",
+            "in": "query",
+            "description": "文件名",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents": {
+      "post": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "创建文档",
+        "description": "创建新文档，自动保存初始版本",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultDocumentVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/restore/{versionNumber}": {
+      "post": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "恢复文档版本",
+        "description": "将文档恢复到指定版本，自动保存当前版本作为历史版本",
+        "operationId": "restoreVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionNumber",
+            "in": "path",
+            "description": "版本号",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultDocumentVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/collaborators/{collaboratorUserId}": {
+      "post": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "添加文档协作者",
+        "description": "为文档授权协作者，角色支持 owner/editor/viewer",
+        "operationId": "grantAccess",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collaboratorUserId",
+            "in": "path",
+            "description": "协作者用户ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "description": "协作角色",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "editor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{documentId}/comments": {
+      "get": {
+        "tags": [
+          "文档评论"
+        ],
+        "summary": "获取评论列表",
+        "description": "获取文档的所有评论",
+        "operationId": "getComments",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListCommentVO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "文档评论"
+        ],
+        "summary": "添加评论",
+        "description": "为文档添加评论",
+        "operationId": "createComment",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultCommentVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{documentId}/annotations": {
+      "get": {
+        "tags": [
+          "文档批注"
+        ],
+        "summary": "获取批注列表",
+        "description": "获取文档的所有批注",
+        "operationId": "getAnnotations",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListAnnotationVO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "文档批注"
+        ],
+        "summary": "添加批注",
+        "description": "为文档添加批注",
+        "operationId": "createAnnotation",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnotationCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAnnotationVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/upload": {
+      "post": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "上传文件建文档",
+        "description": "原件归档、解析、建协同状态一次做完；任一步失败则整体不留痕迹",
+        "operationId": "upload_1",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "description": "分类",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "default"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "文档文件",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultDocumentVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/async/agent/tasks/{taskId}/continue": {
+      "post": {
+        "tags": [
+          "异步AI处理"
+        ],
+        "summary": "异步续接Agent任务",
+        "description": "提交续接到RabbitMQ，立即返回jobId",
+        "operationId": "submitAgentContinue",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "description": "任务ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentExecutionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAsyncAIJobVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/async/agent/execute": {
+      "post": {
+        "tags": [
+          "异步AI处理"
+        ],
+        "summary": "异步Agent任务",
+        "description": "提交统一Agent任务到RabbitMQ，立即返回jobId",
+        "operationId": "submitAgent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentExecutionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAsyncAIJobVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/async/agent/approvals/confirm": {
+      "post": {
+        "tags": [
+          "异步AI处理"
+        ],
+        "summary": "异步确认危险操作",
+        "description": "提交审批确认到RabbitMQ，立即返回jobId",
+        "operationId": "submitAgentApproval",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentExecutionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAsyncAIJobVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/aiops/metrics/timer": {
+      "post": {
+        "tags": [
+          "AIOps"
+        ],
+        "summary": "记录耗时",
+        "description": "记录耗时指标",
+        "operationId": "recordTimer",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "指标名称",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "duration",
+            "in": "query",
+            "description": "耗时(ms)",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/aiops/metrics/reset": {
+      "post": {
+        "tags": [
+          "AIOps"
+        ],
+        "summary": "重置指标",
+        "description": "重置所有监控指标",
+        "operationId": "resetMetrics",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/aiops/metrics/counter": {
+      "post": {
+        "tags": [
+          "AIOps"
+        ],
+        "summary": "记录计数器",
+        "description": "记录计数器指标",
+        "operationId": "incrementCounter",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "指标名称",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "delta",
+            "in": "query",
+            "description": "增量",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/aiops/faults/{faultId}/resolve": {
+      "post": {
+        "tags": [
+          "AIOps"
+        ],
+        "summary": "处理故障",
+        "description": "处理指定的故障",
+        "operationId": "resolveFault",
+        "parameters": [
+          {
+            "name": "faultId",
+            "in": "path",
+            "description": "故障ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/tasks/{taskId}/continue": {
+      "post": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "续接Agent任务",
+        "description": "对处于 action_required 状态的任务补充信息后继续执行",
+        "operationId": "continueTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentExecutionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAgentTaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/tasks/{taskId}/cancel": {
+      "post": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "取消Agent任务",
+        "description": "在主循环下一次迭代入口生效；终态任务不会被覆盖",
+        "operationId": "cancelTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/tasks/{taskId}/approvals/cancel": {
+      "post": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "取消危险操作",
+        "description": "用户拒绝危险操作时取消挂起的任务",
+        "operationId": "cancelApproval",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/session/{sessionId}/end": {
+      "post": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "结束对话",
+        "description": "结束指定对话",
+        "operationId": "endSession",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "对话ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/session/start": {
+      "post": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "开始对话",
+        "description": "创建新的对话会话",
+        "operationId": "startSession",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "用户ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "default"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/approvals/confirm": {
+      "post": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "确认危险操作",
+        "description": "携带 taskId 与 approvedToolCallIds 继续执行原挂起任务",
+        "operationId": "confirmApproval",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentExecutionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAgentTaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "tags": [
+          "用户管理"
+        ],
+        "summary": "获取用户信息",
+        "description": "根据用户ID获取用户详细信息",
+        "operationId": "getUserById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "用户ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultUserVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/lookup": {
+      "get": {
+        "tags": [
+          "用户管理"
+        ],
+        "summary": "根据用户名查询用户",
+        "description": "用于文档协作授权时查找协作者",
+        "operationId": "getUserByUsername",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "description": "用户名",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultUserVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/search": {
+      "get": {
+        "tags": [
+          "文件元数据"
+        ],
+        "summary": "搜索文件",
+        "description": "根据关键词搜索文件",
+        "operationId": "searchFiles",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "搜索关键词",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "每页大小",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/preview/{fileId}": {
+      "get": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "文件预览",
+        "description": "预览指定文件",
+        "operationId": "preview",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "description": "文件ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/metadata/{fileId}": {
+      "get": {
+        "tags": [
+          "文件元数据"
+        ],
+        "summary": "获取文件元数据",
+        "description": "根据文件ID获取文件详细信息",
+        "operationId": "getMetadata",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "description": "文件ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/metadata/{fileId}/type": {
+      "get": {
+        "tags": [
+          "文件元数据"
+        ],
+        "summary": "获取文件类型",
+        "description": "根据文件ID获取文件类型",
+        "operationId": "getFileType",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "description": "文件ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/metadata/{fileId}/name": {
+      "get": {
+        "tags": [
+          "文件元数据"
+        ],
+        "summary": "获取文件名",
+        "description": "根据文件ID获取文件名",
+        "operationId": "getFileName",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "description": "文件ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/list": {
+      "get": {
+        "tags": [
+          "文件元数据"
+        ],
+        "summary": "获取文件列表",
+        "description": "获取文件列表，支持分页和排序",
+        "operationId": "getFileList",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "每页大小",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "排序字段",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "createTime"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "排序方向",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/info/{fileId}/type": {
+      "get": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "获取文件类型",
+        "description": "根据文件ID获取文件Content-Type",
+        "operationId": "getFileType_1",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "description": "文件ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/info/{fileId}/name": {
+      "get": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "获取文件名",
+        "description": "根据文件ID获取原始文件名",
+        "operationId": "getFileName_1",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "description": "文件ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/download/{fileId}": {
+      "get": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "文件下载",
+        "description": "下载指定文件",
+        "operationId": "download",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "description": "文件ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/directory": {
+      "get": {
+        "tags": [
+          "文件元数据"
+        ],
+        "summary": "获取目录结构",
+        "description": "获取文件系统目录结构",
+        "operationId": "getDirectoryStructure",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "description": "目录路径",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/versions": {
+      "get": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "获取文档版本列表",
+        "description": "获取文档的所有历史版本，按版本号降序排列",
+        "operationId": "getVersions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListDocumentVersion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/storage": {
+      "get": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "获取文档存储位置",
+        "description": "根据文档ID获取其MinIO bucket/objectName，供AI文件操作使用",
+        "operationId": "getStorageLocation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultDocumentVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/stats": {
+      "get": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "获取文档字符统计",
+        "description": "统计正文的字数、中英文、数字、标点、段落数",
+        "operationId": "getStats",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultDocumentStatsVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{documentId}/comments/{commentId}": {
+      "get": {
+        "tags": [
+          "文档评论"
+        ],
+        "summary": "获取评论详情",
+        "description": "获取指定评论的详情",
+        "operationId": "getComment",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "description": "评论ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultCommentVO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "文档评论"
+        ],
+        "summary": "删除评论",
+        "description": "删除指定评论",
+        "operationId": "deleteComment",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "description": "评论ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{documentId}/comments/{commentId}/replies": {
+      "get": {
+        "tags": [
+          "文档评论"
+        ],
+        "summary": "获取回复列表",
+        "description": "获取评论的所有回复",
+        "operationId": "getReplies",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "description": "评论ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListCommentVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{documentId}/annotations/line/{lineNumber}": {
+      "get": {
+        "tags": [
+          "文档批注"
+        ],
+        "summary": "获取指定行的批注",
+        "description": "获取文档指定行的所有批注",
+        "operationId": "getAnnotationsByLine",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "description": "文档ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lineNumber",
+            "in": "path",
+            "description": "行号",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListAnnotationVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/user/{userId}": {
+      "get": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "获取用户文档列表",
+        "description": "获取指定用户的所有活跃文档列表",
+        "operationId": "getByUserId",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "用户ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListDocumentVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/search": {
+      "get": {
+        "tags": [
+          "文档管理"
+        ],
+        "summary": "搜索文档",
+        "description": "根据关键词搜索标题、内容、关键词，或按分类筛选文档",
+        "operationId": "search",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "关键词（搜索标题、内容、关键词）",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "分类",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListDocumentVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/models": {
+      "get": {
+        "tags": [
+          "AI处理"
+        ],
+        "summary": "获取可用模型列表",
+        "description": "获取所有可用的AI模型列表及其详细信息",
+        "operationId": "getModels",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/async/jobs/{jobId}": {
+      "get": {
+        "tags": [
+          "异步AI处理"
+        ],
+        "summary": "查询异步任务",
+        "description": "根据jobId查询任务状态和执行结果",
+        "operationId": "getJob",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "description": "异步任务ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAsyncAIJobVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/aiops/monitor": {
+      "get": {
+        "tags": [
+          "AIOps"
+        ],
+        "summary": "获取监控指标",
+        "description": "获取系统的监控指标",
+        "operationId": "getMetrics",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/aiops/health": {
+      "get": {
+        "tags": [
+          "AIOps"
+        ],
+        "summary": "健康检查",
+        "description": "检查系统健康状态",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/aiops/faults": {
+      "get": {
+        "tags": [
+          "AIOps"
+        ],
+        "summary": "获取故障列表",
+        "description": "获取所有故障记录",
+        "operationId": "getAllFaults",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/aiops/detect": {
+      "get": {
+        "tags": [
+          "AIOps"
+        ],
+        "summary": "检测故障",
+        "description": "检测系统中的故障",
+        "operationId": "detectFaults",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/workbench/overview": {
+      "get": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "Agent工作台总览",
+        "description": "聚合工具列表、用户对话和最近Agent任务用于前端展示",
+        "operationId": "workbenchOverview",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/tools": {
+      "get": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "获取Agent工具列表",
+        "description": "获取统一Agent可调用的全部工具能力",
+        "operationId": "listTools",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListAgentToolDefinition"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/tasks": {
+      "get": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "列出Agent任务历史",
+        "description": "按当前用户列出最近的任务快照，管理员可查看全部",
+        "operationId": "listTasks",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "管理员可指定 userId，留空表示当前用户",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListAgentTaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/tasks/{taskId}": {
+      "get": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "查询Agent任务快照",
+        "description": "返回指定 taskId 的任务执行计划、工具结果与时间线",
+        "operationId": "getTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAgentTaskResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "删除Agent任务",
+        "description": "从注册表中彻底删除任务快照",
+        "operationId": "deleteTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/sessions": {
+      "get": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "列出会话",
+        "description": "按最近使用排序，含标题与最后一个任务ID",
+        "operationId": "listSessions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/session/{sessionId}/history": {
+      "get": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "获取对话历史",
+        "description": "获取对话的消息历史",
+        "operationId": "getSessionHistory",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "对话ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/memory": {
+      "get": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "列出我的记忆",
+        "description": "Agent 跨会话记住的用户事实",
+        "operationId": "listMemory",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListAgentMemory"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/{fileId}": {
+      "delete": {
+        "tags": [
+          "文件管理"
+        ],
+        "summary": "文件删除",
+        "description": "删除指定文件",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "description": "文件ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/agent/memory/{name}": {
+      "delete": {
+        "tags": [
+          "AI Agent"
+        ],
+        "summary": "删除一条记忆",
+        "description": "按 name 删除",
+        "operationId": "deleteMemory",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "记忆的 name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DocumentUpdateDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "changeLog": {
+            "type": "string"
+          },
+          "autosave": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DocumentVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fileId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bucketName": {
+            "type": "string"
+          },
+          "objectName": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultDocumentVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DocumentVO"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ResultVoid": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AnnotationCreateDTO": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string"
+          },
+          "lineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startOffset": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "endOffset": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "annotationType": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterDTO": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        }
+      },
+      "ResultUserVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UserVO"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "UserVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultString": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LoginDTO": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginVO": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserVO"
+          }
+        }
+      },
+      "ResultLoginVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LoginVO"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ResultMapStringString": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ResultMapStringObject": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DocumentCreateDTO": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CommentCreateDTO": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          }
+        }
+      },
+      "CommentVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommentVO"
+            }
+          }
+        }
+      },
+      "ResultCommentVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CommentVO"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AnnotationVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "lineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startOffset": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "endOffset": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "annotationType": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultAnnotationVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AnnotationVO"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AgentExecutionRequest": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "model": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "workspace": {
+            "type": "string"
+          },
+          "returnIntermediateSteps": {
+            "type": "boolean"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "approvedToolCallIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "userInputs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AsyncAIJobVO": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "startedAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "finishedAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "result": {
+            "type": "object"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "ResultAsyncAIJobVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AsyncAIJobVO"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AgentTaskResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "task": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StepResponse"
+            }
+          },
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Artifact"
+            }
+          },
+          "availableTools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "iterations": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toolCallCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "promptTokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cachedPromptTokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completionTokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "stoppedReason": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cancelledAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savedAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pending": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          },
+          "currentStatus": {
+            "type": "string"
+          },
+          "retryAfterMs": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Artifact": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PendingResponse": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "question": {
+            "type": "string"
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "ResultAgentTaskResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgentTaskResponse"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "StepResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "requiresApproval": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ResultBoolean": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DocumentVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "versionNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "keywords": {
+            "type": "string"
+          },
+          "changeLog": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultListDocumentVersion": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentVersion"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DocumentStatsVO": {
+        "type": "object",
+        "properties": {
+          "totalCharacters": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "chineseCharacters": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "englishCharacters": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "digits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "spaces": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "punctuations": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lines": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ResultDocumentStatsVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DocumentStatsVO"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ResultListCommentVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommentVO"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ResultListAnnotationVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnnotationVO"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ResultListDocumentVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentVO"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ResultListMapStringObject": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object"
+              }
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AgentToolDefinition": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parameterSchema": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Param"
+            }
+          },
+          "requiresApproval": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Param": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "defaultValue": {
+            "type": "object"
+          },
+          "allowedValues": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "minValue": {
+            "type": "number"
+          },
+          "maxValue": {
+            "type": "number"
+          }
+        }
+      },
+      "ResultListAgentToolDefinition": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentToolDefinition"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ResultListAgentTaskResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentTaskResponse"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AgentMemory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "sourceTaskId": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultListAgentMemory": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentMemory"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    }
+  }
+}

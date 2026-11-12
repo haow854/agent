@@ -1,0 +1,13 @@
+{
+  "id": "edit-02",
+  "tags": ["edit"],
+  "seeds": [{"file": "sectioned_report.md", "title": "渠道季度报告"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "在文档《{{title:0}}》里，只把“三、华东市场”这一节中的“线下渠道”改成“直营渠道”，其他小节里的“线下渠道”保持原样。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "doc_regex", "doc": 0, "pattern": "三、华东市场(?:(?!线下渠道)[\\s\\S])*?四、西部市场"},
+    {"type": "doc_count", "doc": 0, "text": "直营渠道", "min": 2, "max": 2},
+    {"type": "doc_count", "doc": 0, "text": "线下渠道", "min": 4, "max": 4}
+  ]
+}

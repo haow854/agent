@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.javaee.agentservice.session.SessionMapper">
+
+    <update id="updateLastMessage">
+        UPDATE agent_session
+        <set>
+            last_message_id = #{lastMessageId},
+            <if test="lastTaskId != null">last_task_id = #{lastTaskId},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="setTitleIfAbsent">
+        UPDATE agent_session
+        SET title = #{title}
+        WHERE id = #{id} AND title IS NULL
+    </update>
+
+    <update id="setDocumentIdIfAbsent">
+        UPDATE agent_session
+        SET document_id = #{documentId}
+        WHERE id = #{id} AND document_id IS NULL
+    </update>
+
+</mapper>

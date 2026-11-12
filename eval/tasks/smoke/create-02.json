@@ -1,0 +1,18 @@
+{
+  "id": "create-02",
+  "tags": ["create"],
+  "seeds": [{"file": "project_log.md", "title": "新版工作台项目日志"}],
+  "scope": {"workspace": "all"},
+  "goal": "阅读文档《{{title:0}}》，新建一篇标题为《项目时间线》的文档，按时间顺序列出日志里全部带具体日期的里程碑，日期用原文的 2026-XX-XX 格式。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "created_exists", "titleContains": "时间线"},
+    {"type": "created_contains", "text": "2026-01-12"},
+    {"type": "created_contains", "text": "2026-02-09"},
+    {"type": "created_contains", "text": "2026-03-05"},
+    {"type": "created_contains", "text": "2026-04-18"},
+    {"type": "created_contains", "text": "2026-05-30"},
+    {"type": "created_contains", "text": "2026-06-21"},
+    {"type": "created_contains", "text": "2026-07-15"}
+  ]
+}

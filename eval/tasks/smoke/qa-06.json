@@ -1,0 +1,11 @@
+{
+  "id": "qa-06",
+  "tags": ["qa"],
+  "seeds": [{"file": "feature_matrix.md", "title": "产品版本能力说明"}],
+  "scope": {"workspace": "current", "doc": 0},
+  "goal": "根据文档《{{title:0}}》回答：基础版支持 API 导出吗？只回答“支持”或“不支持”。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "answer_contains", "text": "不支持"}
+  ]
+}

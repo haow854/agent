@@ -1,0 +1,13 @@
+{
+  "id": "live-04",
+  "tags": ["live", "web", "paper"],
+  "seeds": [],
+  "scope": {"workspace": "all"},
+  "goal": "用联网搜索确认：RAG 论文《Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks》发表在哪一年的哪个会议？把年份、会议名和一个来源链接写在回答里。",
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "tool_called", "name": "web_search", "min": 1},
+    {"type": "answer_contains", "text": "2020"},
+    {"type": "answer_regex", "pattern": "NeurIPS|NIPS|Neural Information Processing"}
+  ]
+}

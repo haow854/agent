@@ -1,0 +1,18 @@
+{
+  "id": "mem-04",
+  "tags": ["memory"],
+  "seeds": [{"file": "memo.md", "title": "周报备忘"}],
+  "cleanupMemory": true,
+  "parts": [
+    {"goal": "记住我的长期偏好：给我的文档新增小节时，小节标题以【补】开头。记到长期记忆。", "scope": {"workspace": "all"}},
+    {"goal": "之前那条小节标题加【补】前缀的偏好不要了，把它从你的长期记忆里删掉。", "scope": {"workspace": "all"}},
+    {"goal": "在文档《{{title:0}}》里新增一个小节，内容是：季度复盘会推迟到月底。", "scope": {"workspace": "current", "doc": 0}}
+  ],
+  "checks": [
+    {"type": "task_status", "expect": "success"},
+    {"type": "tool_called", "name": "forget", "min": 1},
+    {"type": "memory_not_contains", "text": "【补】"},
+    {"type": "doc_not_contains", "doc": 0, "text": "【补】"},
+    {"type": "doc_contains", "doc": 0, "text": "季度复盘会"}
+  ]
+}
