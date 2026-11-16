@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+# 演示账号的明文密码，只在本机保管
+deploy/demo-accounts.txt
 .claude/settings.local.json
 
 # ---- 依赖与构建产物 ----

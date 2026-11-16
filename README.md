@@ -86,7 +86,7 @@ Agent/
 │  ├─ tasks/                 # 文档、多轮对话及工具任务
 │  ├─ fixtures/              # 测试语料
 │  └─ fixture_mcp/           # 固定网页搜索与抓取数据
-├─ deploy/                   # Dockerfile 之外的部署配置：compose、Prometheus、部署脚本
+├─ deploy/                   # 单机 compose、构建与部署脚本（各服务的 Dockerfile 在各自目录）
 ├─ docs/                     # Vibe Coding 知识库
 │  ├─ 01-product/            # 产品定位、功能地图、功能设计
 │  ├─ 02-todos/              # 待办看板与已完成归档

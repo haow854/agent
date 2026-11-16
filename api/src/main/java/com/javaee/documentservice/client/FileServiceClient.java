@@ -20,7 +20,8 @@ public class FileServiceClient {
         return fileService.upload(file);
     }
 
+    /** 文档的原始文件随文档一起删。文档的写权限由调用方查过。 */
     public void delete(String fileId) {
-        fileService.delete(fileId);
+        fileService.deleteStored(fileId);
     }
 }

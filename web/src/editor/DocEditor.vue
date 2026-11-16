@@ -76,7 +76,7 @@
       <editor-content :editor="editor" />
     </div>
 
-    <input ref="imageInputRef" type="file" accept="image/*" class="hidden-file-input" @change="handleImagePicked" />
+    <input ref="imageInputRef" type="file" accept="image/*" multiple class="hidden-file-input" @change="handleImagePicked" />
   </div>
 </template>
 
@@ -86,6 +86,8 @@ import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import TextAlign from '@tiptap/extension-text-align'
+import { TableKit } from '@tiptap/extension-table'
+import { TaskList, TaskItem } from '@tiptap/extension-list'
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCaret from '@tiptap/extension-collaboration-caret'
 import { ElMessage } from 'element-plus'
@@ -117,12 +119,17 @@ const txVersion = ref(0)
 
 const isCollab = !!props.provider
 
+// 内容扩展必须与 collab-server/extensions.js 一致：协同服务用同一套扩展在协同状态和 Markdown 之间转换，
+// 这边多出的节点那边认不出，会在 Agent 读写时丢掉
 const buildExtensions = () => {
   const list = [
     // 协同模式下必须关掉本地撤销栈，Collaboration 扩展提供协同感知的撤销
-    StarterKit.configure({ heading: { levels: [1, 2, 3] }, ...(isCollab ? { undoRedo: false } : {}) }),
+    StarterKit.configure(isCollab ? { undoRedo: false } : {}),
     Image.configure({ inline: false, allowBase64: false }),
-    TextAlign.configure({ types: ['heading', 'paragraph'] })
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    TableKit,
+    TaskList,
+    TaskItem.configure({ nested: true })
   ]
   if (isCollab) {
     list.push(Collaboration.configure({ document: props.provider.document }))
@@ -138,7 +145,7 @@ const editor = useEditor({
   content: isCollab ? undefined : (props.modelValue || ''),
   editable: props.editable,
   extensions: buildExtensions(),
-  // 保留原来的 .paper 类名，A4 纸样式依赖它
+  // 正文排版样式挂在 .paper 上
   editorProps: {
     attributes: { class: 'paper' },
     handlePaste: (view, event) => handleImageFiles(Array.from(event.clipboardData?.files || [])),
@@ -187,37 +194,36 @@ watch(() => props.editable, (value) => {
 
 const triggerImagePicker = () => imageInputRef.value?.click()
 
-const handleImagePicked = async (event) => {
-  const file = event.target.files?.[0]
+const handleImagePicked = (event) => {
+  const files = Array.from(event.target.files)
   event.target.value = ''
-  if (file) await uploadAndInsertImage(file)
+  uploadImages(files)
 }
 
 /** 粘贴/拖拽进来的图片同样走上传，返回 true 表示已处理，阻止默认的 base64 内嵌 */
 const handleImageFiles = (files) => {
   const images = files.filter(file => file.type.startsWith('image/'))
   if (images.length === 0) return false
-  images.forEach(file => uploadAndInsertImage(file))
+  uploadImages(images)
   return true
 }
 
 /**
- * 图片本体传 MinIO，文档里只留下Quote地址。
+ * 图片本体传 MinIO，文档里只留下引用地址。
  * 不用 base64 内嵌：那样几 MB 的图片会被塞进 document.content 并参与每次同步。
+ * 多张图按顺序逐张上传、插入。
  */
-const uploadAndInsertImage = async (file) => {
-  if (uploadingImage.value) return
+const uploadImages = async (files) => {
   uploadingImage.value = true
   try {
-    const res = await fileApi.upload(file)
-    const fileId = res?.data?.fileId
-    if (!fileId) throw new Error('Upload returned no fileId')
-
-    editor.value?.chain().focus().setImage({
-      src: `/api/files/preview/${fileId}`,
-      alt: file.name
-    }).run()
-    ElMessage.success('Image inserted')
+    for (const file of files) {
+      const res = await fileApi.upload(file)
+      editor.value.chain().focus().setImage({
+        src: `/api/files/preview/${res.data.fileId}`,
+        alt: file.name
+      }).run()
+    }
+    ElMessage.success(files.length > 1 ? `${files.length} images inserted` : 'Image inserted')
   } catch (e) {
     console.error('Image upload failed', e)
     ElMessage.error('Image upload failed')
@@ -271,19 +277,16 @@ onBeforeUnmount(() => {
 
 .tb-divider { width: 1px; height: 18px; background: var(--border); margin: 0 6px; }
 
-.paper-scroll { display: flex; padding: 40px 0 80px; overflow-x: auto; }
+/* 连续页面：正文在居中的一栏里往下延伸，不分页 */
+.paper-scroll { padding: 40px 24px 120px; }
 
-.paper-scroll > div { flex: 0 0 auto; margin: 0 auto; }
+.paper-scroll > div { max-width: 760px; margin: 0 auto; }
 
 .hidden-file-input { display: none; }
 
-/* ===== A4 纸张与正文排版（原 EditorView 的 .paper 样式迁移过来） ===== */
+/* ===== 正文排版 ===== */
 :deep(.paper) {
-  width: 780px;
-  min-height: 1100px;
-  background: #fff;
-  padding: 80px 100px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  min-height: 60vh;
   outline: none;
   line-height: 1.8;
   font-size: 16px;
@@ -294,8 +297,35 @@ onBeforeUnmount(() => {
 :deep(.paper h1) { font-size: 28px; font-weight: 500; line-height: 1.4; margin-top: 1.2em; }
 :deep(.paper h2) { font-size: 22px; font-weight: 500; line-height: 1.4; margin-top: 1.1em; }
 :deep(.paper h3) { font-size: 18px; font-weight: 500; line-height: 1.5; margin-top: 1em; }
+:deep(.paper h4) { font-size: 16px; font-weight: 600; line-height: 1.5; margin-top: 1em; }
+:deep(.paper h5) { font-size: 15px; font-weight: 600; line-height: 1.5; margin-top: 0.9em; }
+:deep(.paper h6) { font-size: 14px; font-weight: 600; line-height: 1.5; margin-top: 0.9em; color: var(--text-secondary); }
 :deep(.paper ul), :deep(.paper ol) { padding-left: 1.6em; }
 :deep(.paper li) { margin: 0.2em 0; }
+:deep(.paper li > p) { margin: 0; }
+
+/* 任务列表：复选框在左，正文在右，完成项变灰划线 */
+:deep(.paper ul[data-type="taskList"]) { list-style: none; padding-left: 0.2em; }
+:deep(.paper ul[data-type="taskList"] li) { display: flex; align-items: flex-start; gap: 0.5em; }
+:deep(.paper ul[data-type="taskList"] li > label) { flex: 0 0 auto; margin-top: 0.35em; user-select: none; }
+:deep(.paper ul[data-type="taskList"] li > div) { flex: 1 1 auto; min-width: 0; }
+:deep(.paper ul[data-type="taskList"] li[data-checked="true"] > div) {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+/* 表格：固定布局，内容多时在容器内横向滚动 */
+:deep(.paper .tableWrapper) { overflow-x: auto; }
+:deep(.paper table) { border-collapse: collapse; width: 100%; table-layout: fixed; }
+:deep(.paper th), :deep(.paper td) {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  vertical-align: top;
+  min-width: 3em;
+}
+:deep(.paper th) { background: var(--bg-sunken); font-weight: 600; text-align: left; }
+:deep(.paper th > p), :deep(.paper td > p) { margin: 0; }
+:deep(.paper .selectedCell) { background: var(--ink-soft); }
 :deep(.paper blockquote) {
   border-left: 3px solid var(--border);
   padding-left: 14px;
@@ -313,9 +343,17 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   padding: 12px 14px;
   font-size: 14px;
+  line-height: 1.6;
   overflow-x: auto;
 }
-:deep(.paper code) { background: var(--bg-sunken); border-radius: 3px; padding: 1px 4px; font-size: 14px; }
+:deep(.paper code) {
+  background: var(--bg-sunken);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+:deep(.paper pre code) { background: none; padding: 0; border-radius: 0; }
 :deep(.paper a) { color: var(--brand); text-decoration: underline; }
 :deep(.paper hr) { border: none; border-top: 1px solid var(--border); margin: 1.5em 0; }
 

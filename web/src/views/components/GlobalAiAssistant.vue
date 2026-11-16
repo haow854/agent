@@ -40,7 +40,7 @@
                 <template v-else>◈</template>
               </div>
 
-              <div class="message-content" :class="{ 'needs-room': msg.approvals?.length }">
+              <div class="message-content" :class="{ 'needs-room': msg.approvals?.length || msg.question }">
                 <AgentSteps :steps="msg.steps" />
                 <div
                     v-if="msg.text"
@@ -57,6 +57,11 @@
                 <div v-else-if="msg.approvalOutcome" class="approval-outcome" :class="msg.approvalOutcome">
                   {{ msg.approvalOutcome === 'approved' ? 'You approved this action' : 'You rejected this action — it did not run' }}
                 </div>
+                <QuestionPrompt
+                    v-if="msg.question"
+                    :question="msg.question"
+                    @answer="(text) => answer(msg, text)"
+                />
 
                 <div v-if="msg.actionResult" class="agent-file-card" @click="openDocument(msg.actionResult)">
                   <el-icon size="24" color="var(--brand)"><Document /></el-icon>
@@ -115,10 +120,11 @@ import { openDocument } from '../../utils/openDocument'
 import DocPicker from './DocPicker.vue'
 import AgentSteps from './AgentSteps.vue'
 import ApprovalPrompt from './ApprovalPrompt.vue'
+import QuestionPrompt from './QuestionPrompt.vue'
 
 const route = useRoute()
 const { isVisible, toggle } = useAiPanel()
-const { messages, steps, isThinking, historyLoading, startNewSession, loadHistory, ask, approve, deny } = useAgentChat()
+const { messages, steps, isThinking, historyLoading, startNewSession, loadHistory, ask, answer, approve, deny } = useAgentChat()
 const { modelOptions, currentModel } = useAiModels()
 
 const userInput = ref('')

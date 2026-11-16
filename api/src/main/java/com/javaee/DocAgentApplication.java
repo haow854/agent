@@ -16,7 +16,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 })
 @EnableScheduling
 @EnableAsync
-public class DocAgentApplication {
+public class
+DocAgentApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(DocAgentApplication.class, args);

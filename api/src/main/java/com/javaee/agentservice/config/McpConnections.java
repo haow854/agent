@@ -30,30 +30,16 @@ public class McpConnections {
     @Value("${ai.mcp.search.args:}")
     private String searchArgs;
 
-    @Value("${ai.mcp.fetch.command:uvx}")
-    private String fetchCommand;
-
-    @Value("${ai.mcp.fetch.args:mcp-server-fetch}")
-    private String fetchArgs;
-
     @Value("${ai.mcp.request-timeout-seconds:20}")
     private long requestTimeoutSeconds;
 
     private McpSyncClient search;
-    private McpSyncClient fetch;
 
     public synchronized McpSyncClient search() {
         if (search == null) {
             search = connect(searchTransport());
         }
         return search;
-    }
-
-    public synchronized McpSyncClient fetch() {
-        if (fetch == null) {
-            fetch = connect(stdio(fetchCommand, fetchArgs));
-        }
-        return fetch;
     }
 
     private McpClientTransport searchTransport() {
@@ -73,7 +59,7 @@ public class McpConnections {
             return stdio(searchCommand, searchArgs);
         }
         throw new IllegalStateException(
-                "联网搜索未接入：配置 ai.mcp.search.streamable-url（远程 Streamable HTTP）、"
+                "联网搜索和网页读取未接入：配置 ai.mcp.search.streamable-url（远程 Streamable HTTP）、"
                         + "ai.mcp.search.url（远程 SSE）"
                         + "或 ai.mcp.search.command（本地 stdio，示例见 application.yml）");
     }
@@ -125,14 +111,9 @@ public class McpConnections {
 
     @PreDestroy
     void shutdown() {
-        closeQuietly(search);
-        closeQuietly(fetch);
-    }
-
-    private void closeQuietly(McpSyncClient client) {
-        if (client != null) {
+        if (search != null) {
             try {
-                client.close();
+                search.close();
             } catch (Exception ignored) {
             }
         }

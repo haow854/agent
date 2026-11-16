@@ -24,6 +24,10 @@ public class DocumentAccessService {
     @Autowired
     private DocumentAccessMapper documentAccessMapper;
 
+    public void revokeAll(String documentId) {
+        documentAccessMapper.delete(new QueryWrapper<DocumentAccess>().eq("document_id", documentId));
+    }
+
     public void grantOwnerAccess(String documentId, String bucketName, Long userId) {
         grantAccess(documentId, bucketName, userId, "owner");
     }

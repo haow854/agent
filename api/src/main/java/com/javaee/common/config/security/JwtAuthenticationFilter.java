@@ -31,29 +31,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 // 提取令牌
                 String token = authHeader.substring("Bearer ".length());
-                
-                // 验证令牌
-                if (JwtUtils.validateToken(token)) {
-                    // 解析令牌获取用户信息
-                    Claims claims = JwtUtils.parseToken(token);
-                    Long userId = claims.get("userId", Long.class);
-                    String role = claims.get("role", String.class);
-                    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-                    addGroupAuthorities(authorities, claims.get("permissionGroups"));
-                    addGroupAuthorities(authorities, claims.get("groups"));
-                    
-                    // 创建认证令牌
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            userId, null, authorities
-                    );
-                    
-                    // 设置认证详情
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    
-                    // 设置安全上下文
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
+
+                // 只认访问令牌；签名、过期或类型不对时抛出，落到下面的 catch
+                Claims claims = JwtUtils.parseAccessToken(token);
+                Long userId = claims.get("userId", Long.class);
+                String role = claims.get("role", String.class);
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                addGroupAuthorities(authorities, claims.get("permissionGroups"));
+                addGroupAuthorities(authorities, claims.get("groups"));
+
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        userId, null, authorities
+                );
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
             // 令牌验证失败，清除认证上下文

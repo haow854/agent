@@ -1,0 +1,4 @@
+# 镜像只需要构建好的 dist 和 nginx 配置
+*
+!dist
+!nginx

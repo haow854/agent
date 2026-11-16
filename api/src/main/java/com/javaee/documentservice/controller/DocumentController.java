@@ -80,7 +80,7 @@ public class DocumentController {
      * @return 无
      */
     @DeleteMapping("/{id}")
-    @Operation(summary = "删除文档", description = "软删除文档，将文档状态标记为已删除")
+    @Operation(summary = "删除文档", description = "永久删除文档及其正文、原始文件、版本历史、授权、评论和批注，不可恢复")
     public Result<Void> delete(@Parameter(description = "文档ID") @PathVariable String id) {
         Long userId = requestUserContext.getRequiredUserId();
         documentService.delete(id, userId);

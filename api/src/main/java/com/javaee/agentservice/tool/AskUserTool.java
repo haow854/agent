@@ -21,7 +21,9 @@ public class AskUserTool implements AgentTool {
     @Override
     public AgentToolDefinition definition() {
         return AgentToolDefinition.tool("ask_user")
-                .desc("当任务参数缺失或存在歧义时，向用户提出澄清问题。不要在已经掌握所需信息时使用。")
+                .desc("向用户提问并暂停任务，等用户回答后继续。只在两种情况下用："
+                        + "缺少必需又推断不出的信息；几种理解差别很大且猜错代价高（如删除对象不能唯一确定）。"
+                        + "能按最合理的理解做的，直接做。一次问完，尽量给出候选项。")
                 .required("question", Param.string("需要向用户澄清的问题"))
                 .optional("missingFields", Param.string("本次缺失的字段名，逗号分隔，可选"))
                 .optional("options", Param.string("可供用户选择的候选项，分号分隔，可选"))

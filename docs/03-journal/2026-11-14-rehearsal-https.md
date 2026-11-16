@@ -1,0 +1,23 @@
+# 2026-11-14 · 部署前第二次本地演练（含 HTTPS）
+
+- **目标**：上次演练后 api 镜像、注册、演示账号、HTTPS 都改过，部署前按 compose 完整再跑一遍（T-005、T-033）
+- **结果**：
+  - 用单独的项目名 `docagent-rehearsal` 和临时变量文件（随机密码）运行，8 个容器（含 certbot）全部启动，只有 web 发布 80 和 443
+  - 先 HTTP、再往证书卷放自签证书切到 HTTPS，两个阶段各跑一遍检查脚本，全部经 nginx：
+    - 首页和前端深层链接正常；`/api-docs`、`/swagger-ui.html`、`/actuator/health`、`/ai/read` 不对外
+    - 注册被后端拒绝；MySQL 初始化写入的 demo1、demo2 能登录
+    - 查别人只有 id 和用户名；刷新令牌不能调接口；上传 5 MB 文件正常
+    - 进度推送：不带令牌连不上，带访问令牌经 nginx 能连（HTTPS 下是 `wss://`），只推给任务所属的用户
+    - 协同 WebSocket 经 nginx 握手成功
+    - HTTPS 下 http 301 到 https，ALPN 协商出 h2
+    - Agent 在容器里依次调用 `web_search`、`web_fetch`（Tavily）、`document_read`、`replace_text`，文档改写后回存，进度推了 11 条
+  - api 镜像里 Tesseract 5.3.4（chi_sim、eng）还在，已经没有 Python；镜像从 937 MB 降到 771 MB
+  - 内存：8 个容器合计约 1 GB（api 约 560 MB，certbot 空等时不到 1 MB）
+  - 演练环境、数据卷和构建的镜像都已删除
+- **问题**：
+  - 第一次跑 Agent 返回 401 `invalid_api_key`：`.env` 里的百炼 key 已在控制台作废，本地开发的后端也一样。换上新 key、重建 api 容器后通过
+  - 检查脚本一开始把 `workspace` 传成 `document`（只接受 `all`、`current`），是脚本的错
+- **遗留**：
+  - 服务器上：`.env` 填新的百炼 key 和 Tavily，防火墙加 443，然后首次部署（T-005）
+  - 部署前提交代码
+  - 真证书的签发和续期在服务器上确认（T-033）

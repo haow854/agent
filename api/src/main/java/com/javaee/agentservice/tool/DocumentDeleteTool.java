@@ -27,7 +27,7 @@ public class DocumentDeleteTool implements AgentTool {
     @Override
     public AgentToolDefinition definition() {
         return AgentToolDefinition.tool("document_delete")
-                .desc("永久删除指定业务文档及其文件。")
+                .desc("永久删除指定业务文档及其文件。只有文档所有者能删。")
                 .requiresApproval()
                 .required("documentId", Param.string("业务文档ID，必填"))
                 .build();

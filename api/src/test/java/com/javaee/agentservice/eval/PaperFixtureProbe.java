@@ -1,8 +1,8 @@
 package com.javaee.agentservice.eval;
 
-import com.javaee.documentservice.util.DocumentParserUtil;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +37,11 @@ class PaperFixtureProbe {
         for (Path pdf : Files.list(PAPERS).sorted().toList()) {
             byte[] bytes = Files.readAllBytes(pdf);
             int pages;
+            String text;
             try (PDDocument document = Loader.loadPDF(bytes)) {
                 pages = document.getNumberOfPages();
+                text = new PDFTextStripper().getText(document).trim();
             }
-            String text = DocumentParserUtil.parseDocument(bytes, pdf.getFileName().toString());
             Files.createDirectories(EXTRACTED);
             Files.write(EXTRACTED.resolve(
                             pdf.getFileName().toString().replace(".pdf", ".txt")),

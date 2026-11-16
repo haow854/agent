@@ -8,7 +8,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 文档版本实体类
+ * 文档版本的元数据。正文存在文档所在的桶里，按版本 id 读写（DocumentContentService）。
  */
 @Data
 @TableName("document_version")
@@ -22,8 +22,6 @@ public class DocumentVersion {
     private Integer versionNumber;
 
     private String title;
-
-    private String content;
 
     private String summary;
 

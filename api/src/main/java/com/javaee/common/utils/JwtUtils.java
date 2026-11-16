@@ -43,6 +43,7 @@ public class JwtUtils {
         Map<String, Object> claims = new HashMap<>();
         claims.put(CommonConstant.TOKEN_CLAIM_USER_ID, userId);
         claims.put(CommonConstant.TOKEN_CLAIM_USERNAME, username);
+        claims.put(CommonConstant.TOKEN_CLAIM_TYPE, CommonConstant.TOKEN_TYPE_ACCESS);
         return generateToken(claims, TOKEN_EXPIRATION);
     }
 
@@ -58,6 +59,7 @@ public class JwtUtils {
         claims.put(CommonConstant.TOKEN_CLAIM_USER_ID, userId);
         claims.put(CommonConstant.TOKEN_CLAIM_USERNAME, username);
         claims.put(CommonConstant.TOKEN_CLAIM_ROLE, role);
+        claims.put(CommonConstant.TOKEN_CLAIM_TYPE, CommonConstant.TOKEN_TYPE_ACCESS);
         return generateToken(claims, TOKEN_EXPIRATION);
     }
 
@@ -69,6 +71,7 @@ public class JwtUtils {
     public static String generateRefreshToken(Long userId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put(CommonConstant.TOKEN_CLAIM_USER_ID, userId);
+        claims.put(CommonConstant.TOKEN_CLAIM_TYPE, CommonConstant.TOKEN_TYPE_REFRESH);
         return generateToken(claims, REFRESH_TOKEN_EXPIRATION);
     }
 
@@ -107,17 +110,25 @@ public class JwtUtils {
     }
 
     /**
-     * 验证令牌
-     * @param token 令牌
-     * @return 是否有效
+     * 解析访问令牌：签名、过期时间和类型都要对，刷新令牌不能拿来调接口。
      */
-    public static boolean validateToken(String token) {
-        try {
-            parseToken(token);
-            return true;
-        } catch (Exception e) {
-            return false;
+    public static Claims parseAccessToken(String token) {
+        return parseTokenOfType(token, CommonConstant.TOKEN_TYPE_ACCESS);
+    }
+
+    /**
+     * 解析刷新令牌：只用来换新的访问令牌，访问令牌不能拿来刷新。
+     */
+    public static Claims parseRefreshToken(String token) {
+        return parseTokenOfType(token, CommonConstant.TOKEN_TYPE_REFRESH);
+    }
+
+    private static Claims parseTokenOfType(String token, String type) {
+        Claims claims = parseToken(token);
+        if (!type.equals(claims.get(CommonConstant.TOKEN_CLAIM_TYPE, String.class))) {
+            throw new TokenException(ErrorCodeEnum.TOKEN_ERROR);
         }
+        return claims;
     }
 
     /**

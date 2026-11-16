@@ -45,7 +45,7 @@ public interface DocumentService {
     DocumentVO update(String id, DocumentUpdateDTO dto, Long userId);
 
     /**
-     * 删除文档（软删除）
+     * 永久删除文档及其正文、协同状态、原始文件、版本历史、授权、评论和批注。文档不存在时什么都不做。
      * @param id 文档ID
      * @param userId 删除用户ID
      */

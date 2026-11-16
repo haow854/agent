@@ -1,6 +1,7 @@
 package com.javaee.user.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.javaee.common.constant.CommonConstant;
 import com.javaee.common.constant.ErrorCodeEnum;
 import com.javaee.common.exception.BusinessException;
 import com.javaee.common.utils.JwtUtils;
@@ -15,6 +16,7 @@ import com.javaee.user.vo.UserVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -32,6 +34,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+
+    @Value("${custom.registration-enabled:true}")
+    private boolean registrationEnabled;
 
     @Override
     public LoginVO login(LoginDTO loginDTO) {
@@ -73,6 +78,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public UserVO register(RegisterDTO registerDTO) {
+        if (!registrationEnabled) {
+            throw new BusinessException("未开放注册");
+        }
         // 校验参数
         ValidateUtils.notEmpty(registerDTO.getUsername(), "用户名不能为空");
         ValidateUtils.notEmpty(registerDTO.getPassword(), "密码不能为空");
@@ -133,7 +141,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         ValidateUtils.notEmpty(refreshToken, "刷新令牌不能为空");
         try {
             // 解析刷新令牌
-            Long userId = JwtUtils.getUserId(refreshToken);
+            // 只认刷新令牌：访问令牌不能拿来续期
+            Long userId = JwtUtils.parseRefreshToken(refreshToken)
+                    .get(CommonConstant.TOKEN_CLAIM_USER_ID, Long.class);
             User user = getById(userId);
             if (user == null) {
                 throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);

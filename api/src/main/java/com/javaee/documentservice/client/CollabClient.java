@@ -19,10 +19,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Agent 对文档的读写都经协同服务，而不是直接落库。
+ * Agent 对文档的读写、版本恢复都经协同服务，而不是直接落库。
  *
  * <p>写必须走这里：直接写库时打开着编辑器的那份 ydoc 并不知情，它随后的防抖回存
- * 会把 agent 的改动整片覆盖掉。读也必须走这里，否则同一次 run 里第二次读会读到
+ * 会把改动整片覆盖掉。读也必须走这里，否则同一次 run 里第二次读会读到
  * 尚未回存的旧内容。</p>
  */
 @Component
@@ -65,6 +65,19 @@ public class CollabClient {
 
     public Map<String, Object> delete(String documentId, Long userId, String oldText) {
         return call("/ai/delete", userId, Map.of("documentId", documentId, "old", oldText));
+    }
+
+    /**
+     * 整篇换成 markdown 的内容，返回换掉之前的 markdown。
+     * 协同服务会当场回存，回存要更新文档行，所以调用方不能拿着这一行的事务锁来调。
+     */
+    public String overwrite(String documentId, Long userId, String markdown) {
+        Map<String, Object> result = call("/ai/overwrite", userId,
+                Map.of("documentId", documentId, "markdown", markdown == null ? "" : markdown));
+        if (result.get("error") != null) {
+            throw new BusinessException("协同服务写入失败: " + result.get("error"));
+        }
+        return String.valueOf(result.get("previous"));
     }
 
     /** markdown 转协同状态。不带 documentId：那侧是纯函数，不碰任何已存在的文档。 */

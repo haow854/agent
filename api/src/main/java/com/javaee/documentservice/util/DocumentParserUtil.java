@@ -1,13 +1,5 @@
 package com.javaee.documentservice.util;
 
-import net.sourceforge.tess4j.ITesseract;
-import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
-import org.apache.poi.hwpf.HWPFDocument;
-import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.xwpf.usermodel.IBodyElement;
 import org.apache.poi.xwpf.usermodel.UnderlinePatterns;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -27,8 +19,6 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,8 +27,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -46,108 +34,50 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * 文档解析工具类
- * 支持多种文档格式：Word、PDF、HTML、Markdown、图片OCR等
+ * 导入的文件转 Markdown（docx、txt、Markdown、HTML），以及 Markdown 正文转纯文本、摘要。
  */
 public class DocumentParserUtil {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentParserUtil.class);
 
-    // 支持的图片格式
-    private static final Set<String> IMAGE_EXTENSIONS = new HashSet<>(
-            Arrays.asList("jpg", "jpeg", "png", "bmp", "gif", "tiff", "tif")
-    );
+    // 能导入成可编辑文档的格式
+    private static final Set<String> EDITABLE_EXTENSIONS = Set.of("docx", "txt", "md", "markdown", "html", "htm");
 
-    // 支持的所有文档格式
-    private static final Set<String> SUPPORTED_EXTENSIONS = new HashSet<>(
-            Arrays.asList("docx", "doc", "txt", "pdf", "md", "markdown", "html", "htm", "xml",
-                    "jpg", "jpeg", "png", "bmp", "gif", "tiff", "tif")
-    );
-
-    // 可解析格式不一定可编辑：PDF 和图片可提取文本，但不支持导入为可编辑文档。
-    private static final Set<String> EDITABLE_EXTENSIONS = new HashSet<>(
-            Arrays.asList("docx", "txt", "md", "markdown", "html", "htm")
-    );
-
-    // markdownToNodes 的标题正则只到 #{1,3}，再深的层级还原不回来
-    private static final int MAX_HEADING_LEVEL = 3;
+    // Markdown 只有六级标题，Word 的七到九级大纲并到六级
+    private static final int MAX_HEADING_LEVEL = 6;
 
     private static final Pattern HEADING_STYLE = Pattern.compile("(?i)heading\\s*([1-9])");
 
     /**
-     * 解析文档内容
-     * @param fileContent 文件内容字节数组
-     * @param fileName 文件名（用于判断格式）
-     * @return 解析后的文本内容
+     * 文件内容转 Markdown，格式按扩展名判断。
+     *
+     * <p>解析失败直接抛出，由调用方决定怎么提示用户；不要把解析不了的二进制当文本存进文档。</p>
      */
-    public static String parseDocument(byte[] fileContent, String fileName) {
-        if (fileContent == null || fileContent.length == 0) {
-            return "";
-        }
-
+    public static String parseDocument(byte[] fileContent, String fileName) throws IOException {
         String extension = getFileExtension(fileName);
         log.info("开始解析文档: fileName={}, extension={}, size={}", fileName, extension, fileContent.length);
 
-        try {
-            return switch (extension.toLowerCase()) {
-                case "docx" -> docxToMarkdown(fileContent);
-                case "doc" -> parseDoc(fileContent);
-                case "txt" -> textToMarkdown(decodeText(fileContent));
-                case "pdf" -> parsePdf(fileContent);
-                case "md", "markdown" -> normalizeNewlines(decodeText(fileContent));
-                case "html", "htm" -> htmlToMarkdown(decodeText(fileContent));
-                case "xml" -> parseXml(fileContent);
-                case "jpg", "jpeg", "png", "bmp", "gif", "tiff", "tif" -> parseImageOcr(fileContent);
-                default -> {
-                    log.warn("不支持的文件格式: {}, 尝试作为纯文本处理", extension);
-                    yield parseTxt(fileContent);
-                }
-            };
-        } catch (Exception e) {
-            log.error("解析文档失败: {}", fileName, e);
-            // 如果解析失败，尝试作为纯文本处理
-            try {
-                return new String(fileContent, StandardCharsets.UTF_8);
-            } catch (Exception ex) {
-                return "";
-            }
-        }
+        return switch (extension) {
+            case "docx" -> docxToMarkdown(fileContent);
+            case "txt" -> textToMarkdown(decodeText(fileContent));
+            case "md", "markdown" -> normalizeNewlines(decodeText(fileContent));
+            case "html", "htm" -> htmlToMarkdown(decodeText(fileContent));
+            default -> throw new IOException("不支持导入这种格式: " + fileName);
+        };
     }
 
-    /**
-     * 获取文件扩展名
-     */
+    /** 小写扩展名；没有扩展名时按纯文本处理。 */
     private static String getFileExtension(String fileName) {
         if (fileName == null || !fileName.contains(".")) {
             return "txt";
         }
-        return fileName.substring(fileName.lastIndexOf(".") + 1);
-    }
-
-    /**
-     * 判断文件是否为支持的图片格式
-     */
-    public static boolean isImageFile(String fileName) {
-        String extension = getFileExtension(fileName);
-        return IMAGE_EXTENSIONS.contains(extension.toLowerCase());
-    }
-
-    /**
-     * 判断文件是否为支持的文档格式
-     */
-    public static boolean isSupportedDocument(String fileName) {
-        String extension = getFileExtension(fileName);
-        return SUPPORTED_EXTENSIONS.contains(extension.toLowerCase());
+        return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
     }
 
     public static boolean isEditableDocument(String fileName) {
-        String extension = getFileExtension(fileName);
-        return EDITABLE_EXTENSIONS.contains(extension.toLowerCase());
+        return EDITABLE_EXTENSIONS.contains(getFileExtension(fileName));
     }
 
-    /**
-     * 解析DOCX文件
-     */
     /**
      * DOCX 转 markdown。
      *
@@ -197,31 +127,50 @@ public class DocumentParserUtil {
         return format != null && !"bullet".equalsIgnoreCase(format);
     }
 
-    /**
-     * 表格降级成一行一段，单元格用 {@code |} 分隔。
-     *
-     * <p>editor 的 extensions 里没有 Table，产 markdown 表格也会被 generateJSON 整个丢掉。
-     * 降级至少保住内容。</p>
-     */
+    /** Word 表格 → Markdown 表格，第一行作表头。 */
     private static List<String> tableToMarkdown(XWPFTable table) {
-        List<String> rows = new ArrayList<>();
+        List<List<String>> rows = new ArrayList<>();
         for (XWPFTableRow row : table.getRows()) {
-            String line = row.getTableCells().stream()
-                    .map(cell -> cell.getText() == null ? "" : cell.getText().trim())
-                    .collect(Collectors.joining(" | "));
-            if (!line.replace("|", "").trim().isEmpty()) {
-                rows.add(line);
-            }
+            rows.add(row.getTableCells().stream()
+                    .map(cell -> cell.getText() == null ? "" : cell.getText())
+                    .toList());
         }
-        return rows;
+        String markdown = markdownTable(rows);
+        return markdown.isEmpty() ? List.of() : List.of(markdown);
     }
 
     /**
-     * run 的样式转 markdown 标记，一个 run 只取一个。
+     * 单元格文字 → Markdown 表格，第一行作表头。
      *
-     * <p>{@code markdownToNodes} 的行内正则是 {@code \*\*([^*]+)\*\*} 这种，标记里不能再有标记，
-     * 所以 {@code ***粗斜体***} 会被解析错。嵌套是这套编解码的能力上限，加粗优先。</p>
+     * <p>列数按最宽的一行补齐；单元格里的换行并成空格，{@code |} 加反斜杠转义，
+     * 否则会被当成列分隔。整张表没有文字时返回空串。</p>
      */
+    static String markdownTable(List<List<String>> rows) {
+        List<List<String>> cleaned = rows.stream()
+                .map(row -> row.stream()
+                        .map(cell -> cell.replaceAll("\\s+", " ").trim().replace("|", "\\|"))
+                        .toList())
+                .filter(row -> row.stream().anyMatch(cell -> !cell.isEmpty()))
+                .toList();
+        if (cleaned.isEmpty()) {
+            return "";
+        }
+        int columns = cleaned.stream().mapToInt(List::size).max().orElse(0);
+        List<String> lines = new ArrayList<>();
+        for (int i = 0; i < cleaned.size(); i++) {
+            List<String> cells = new ArrayList<>(cleaned.get(i));
+            while (cells.size() < columns) {
+                cells.add("");
+            }
+            lines.add("| " + String.join(" | ", cells) + " |");
+            if (i == 0) {
+                lines.add("|" + " --- |".repeat(columns));
+            }
+        }
+        return String.join("\n", lines);
+    }
+
+    /** run 的样式转 Markdown 标记，加粗、斜体、删除线、下划线可以叠加。 */
     private static String runsToMarkdown(XWPFDocument document, XWPFParagraph paragraph) {
         StringBuilder text = new StringBuilder();
         for (XWPFRun run : paragraph.getRuns()) {
@@ -234,14 +183,17 @@ public class DocumentParserUtil {
                 text.append(piece);
                 continue;
             }
+            if (run.getUnderline() != UnderlinePatterns.NONE) {
+                piece = "<u>" + piece + "</u>";
+            }
+            if (run.isStrikeThrough()) {
+                piece = "~~" + piece + "~~";
+            }
+            if (run.isItalic()) {
+                piece = "*" + piece + "*";
+            }
             if (run.isBold()) {
                 piece = "**" + piece + "**";
-            } else if (run.isItalic()) {
-                piece = "*" + piece + "*";
-            } else if (run.isStrikeThrough()) {
-                piece = "~~" + piece + "~~";
-            } else if (run.getUnderline() != UnderlinePatterns.NONE) {
-                piece = "<u>" + piece + "</u>";
             }
             if (run instanceof XWPFHyperlinkRun link) {
                 XWPFHyperlink target = link.getHyperlink(document);
@@ -273,23 +225,6 @@ public class DocumentParserUtil {
     }
 
     /**
-     * 解析DOC文件（旧版Word）
-     */
-    private static String parseDoc(byte[] content) throws IOException {
-        try (HWPFDocument document = new HWPFDocument(new ByteArrayInputStream(content))) {
-            WordExtractor extractor = new WordExtractor(document);
-            return extractor.getText().trim();
-        }
-    }
-
-    /**
-     * 解析TXT文件
-     */
-    private static String parseTxt(byte[] content) {
-        return decodeText(content).trim();
-    }
-
-    /**
      * 字节转文本，UTF-8 解不出来就按 GB18030 再来一次。
      *
      * <p>国内的 txt 大量是 GBK/GB18030。硬编码 UTF-8 的话它们整篇是乱码，
@@ -297,11 +232,13 @@ public class DocumentParserUtil {
      */
     private static String decodeText(byte[] content) {
         try {
-            return StandardCharsets.UTF_8.newDecoder()
+            String text = StandardCharsets.UTF_8.newDecoder()
                     .onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT)
                     .decode(ByteBuffer.wrap(content))
                     .toString();
+            // 记事本等工具保存的 UTF-8 带 BOM，不去掉会变成正文开头的一个不可见字符
+            return text.startsWith("\uFEFF") ? text.substring(1) : text;
         } catch (CharacterCodingException notUtf8) {
             log.info("按 UTF-8 解码失败，回退 GB18030");
             return new String(content, Charset.forName("GB18030"));
@@ -326,28 +263,38 @@ public class DocumentParserUtil {
     }
 
     /**
-     * 解析PDF文件
-     */
-    private static String parsePdf(byte[] content) throws IOException {
-        try (PDDocument document = Loader.loadPDF(content)) {
-            PDFTextStripper stripper = new PDFTextStripper();
-            return stripper.getText(document).trim();
-        }
-    }
-
-    /**
-     * HTML 转 markdown。
+     * HTML 转 Markdown：标题、段落、列表（含嵌套）、引用、代码块、表格、分隔线、图片。
      *
-     * <p>只产 {@code markdownToNodes} 认得的块类型：多出来的还原不回去，会在
-     * round-trip 校验那里被拒，或者干脆退化成一段普通文字。</p>
+     * <p>按文档顺序逐个取块元素。表格整张转换，表格里的段落不再单独出块。</p>
      */
     public static String htmlToMarkdown(String html) {
         Document doc = Jsoup.parse(html);
         List<String> blocks = new ArrayList<>();
         List<String> pendingList = new ArrayList<>();
 
-        for (Element element : doc.select("h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, hr, img, td, th")) {
+        for (Element element : doc.select("h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, hr, img, table")) {
             String tag = element.tagName();
+            if (!"table".equals(tag) && element.closest("table") != null) {
+                continue;
+            }
+            if ("table".equals(tag)) {
+                flushList(blocks, pendingList);
+                String table = markdownTable(element.select("tr").stream()
+                        .map(tr -> tr.select("th, td").stream().map(Element::text).toList())
+                        .toList());
+                if (!table.isEmpty()) {
+                    blocks.add(table);
+                }
+                continue;
+            }
+            if ("pre".equals(tag)) {
+                flushList(blocks, pendingList);
+                String code = element.wholeText().replaceAll("^\n+|\n+$", "");
+                if (!code.isBlank()) {
+                    blocks.add("```\n" + code + "\n```");
+                }
+                continue;
+            }
             if ("hr".equals(tag)) {
                 flushList(blocks, pendingList);
                 blocks.add("---");
@@ -371,7 +318,12 @@ public class DocumentParserUtil {
             if ("li".equals(tag)) {
                 Element parent = element.parent();
                 boolean ordered = parent != null && "ol".equals(parent.tagName());
-                pendingList.add(ordered ? "1. " + inline : "- " + inline);
+                // 外层还有几层列表，就缩进几级
+                long depth = element.parents().stream()
+                        .filter(p -> "ul".equals(p.tagName()) || "ol".equals(p.tagName()))
+                        .count() - 1;
+                String indent = "  ".repeat((int) Math.max(depth, 0));
+                pendingList.add(indent + (ordered ? "1. " : "- ") + inline);
                 continue;
             }
 
@@ -389,11 +341,7 @@ public class DocumentParserUtil {
         return String.join("\n\n", blocks);
     }
 
-    /**
-     * 元素的行内内容转 markdown。
-     *
-     * <p>嵌套标记不产：{@code markdownToNodes} 的行内正则解析不了 {@code ***x***}。</p>
-     */
+    /** 元素的行内内容转 Markdown，标记可以嵌套（{@code <b><i>x</i></b>} 得到 {@code ***x***}）。 */
     private static String inlineToMarkdown(Element element) {
         StringBuilder text = new StringBuilder();
         for (Node node : element.childNodes()) {
@@ -432,9 +380,16 @@ public class DocumentParserUtil {
             return "";
         }
         return markdown
+                // 代码块的围栏行
+                .replaceAll("(?m)^\\s*```.*$", "")
+                // 表格：分隔行整行去掉，单元格之间的竖线换成空格（转义的 \| 是正文，留着）
+                .replaceAll("(?m)^\\s*\\|?(\\s*:?-{3,}:?\\s*\\|)+\\s*:?-{0,}:?\\s*$", "")
+                .replaceAll("(?m)^\\s*\\|\\s?", "")
+                .replaceAll("(?m)\\s?(?<!\\\\)\\|\\s*$", "")
+                .replaceAll("\\s*(?<!\\\\)\\|\\s*", " ")
                 .replaceAll("(?m)^\\s{0,3}#{1,6}\\s+", "")
                 .replaceAll("(?m)^\\s{0,3}>\\s?", "")
-                .replaceAll("(?m)^\\s{0,3}([-*+]|\\d+\\.)\\s+", "")
+                .replaceAll("(?m)^\\s*([-*+]|\\d+\\.)\\s+(\\[[ xX]\\]\\s+)?", "")
                 .replaceAll("(?m)^\\s{0,3}(-{3,}|\\*{3,})\\s*$", "")
                 .replaceAll("!\\[[^\\]]*\\](\\([^)]*\\))?", "")
                 .replaceAll("\\[([^\\]]*)\\]\\([^)]*\\)", "$1")
@@ -442,73 +397,28 @@ public class DocumentParserUtil {
                 .replaceAll("~~([^~]+)~~", "$1")
                 .replaceAll("\\*([^*]+)\\*", "$1")
                 .replaceAll("`([^`]+)`", "$1")
+                .replaceAll("</?u>", "")
+                // 规范写法里转义过的符号和 HTML 实体还原成字符
+                .replaceAll("\\\\([\\\\`*_{}\\[\\]()#+\\-.!|<>~])", "$1")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&quot;", "\"")
+                .replace("&#39;", "'")
+                .replace("&amp;", "&")
                 .trim();
-    }
-
-    /**
-     * 解析XML文件
-     */
-    private static String parseXml(byte[] content) throws IOException {
-        String xml = new String(content, StandardCharsets.UTF_8);
-        Document doc = Jsoup.parse(xml);
-        
-        // 提取所有文本内容
-        return doc.text().trim();
-    }
-
-    /**
-     * 解析图片文件，使用OCR识别文字
-     * 注意：需要安装 Tesseract OCR 引擎
-     */
-    private static String parseImageOcr(byte[] content) throws IOException {
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(content)) {
-            BufferedImage image = ImageIO.read(bais);
-            if (image == null) {
-                log.warn("无法解析图片文件");
-                return "";
-            }
-            
-            ITesseract tesseract = new Tesseract();
-            // 设置Tesseract数据路径（可选，如果Tesseract已安装到系统路径可以不设置）
-            // tesseract.setDatapath("path/to/tessdata");
-            
-            // 设置识别语言（英文+简体中文）
-            tesseract.setLanguage("eng+chi_sim");
-            
-            try {
-                String result = tesseract.doOCR(image);
-                return result.trim();
-            } catch (TesseractException e) {
-                log.error("OCR识别失败", e);
-                return "";
-            }
-        }
-    }
-
-    /**
-     * 清理解析后的文本（去除多余空白）
-     */
-    public static String cleanText(String text) {
-        if (text == null) {
-            return "";
-        }
-        // 去除多余的换行和空格
-        return text.replaceAll("\\n+", "\n")
-                   .replaceAll("\\s+", " ")
-                   .trim();
     }
 
     /**
      * 获取文档摘要。
      *
      * <p>先剥标记再截断：正文是编辑器派生的 markdown，直接截前 200 字会截出
-     * {@code ## 标题} 这种东西，而且很可能截在标记中间。</p>
+     * {@code ## 标题} 这种东西，而且很可能截在标记中间。空白（含换行）并成一个空格。</p>
      */
     public static String getSummary(String text, int maxLength) {
         if (text == null || text.isEmpty()) {
             return "";
         }
-        text = cleanText(markdownToText(text));
+        text = markdownToText(text).replaceAll("\\s+", " ").trim();
         if (text.length() <= maxLength) {
             return text;
         }

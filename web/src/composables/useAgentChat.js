@@ -10,7 +10,7 @@ import { agentApi } from '../api/agent'
 import { onAgentProgress } from '../api/agentProgress'
 import { STORAGE_KEYS } from '../constants'
 import { toChatMessages } from '../utils/chatTurns'
-import { approvalsOf, documentCardOf } from '../utils/agentResult'
+import { approvalsOf, documentCardOf, questionOf } from '../utils/agentResult'
 
 /**
  * 一次提交一个键。服务端拿它推导 taskId（同键同 id），所以同一条提交被重放——
@@ -130,6 +130,7 @@ function reconcileSteps(executed) {
 
 function pushResult(result) {
   const approvals = approvalsOf(result)
+  const question = questionOf(result)
   const failure = failureOf(result)
 
   for (const approval of approvals) {
@@ -137,16 +138,25 @@ function pushResult(result) {
         (s) => s.type === 'tool' && s.id === approval.toolCallId)
     if (row) row.status = 'waiting'
   }
+  // 问题由问题卡片显示，这一步就不再以原始参数的形式出现在步骤里
+  if (question) steps.value = steps.value.filter((s) => s.id !== question.toolCallId)
   reconcileSteps(result?.steps)
 
   messages.value.push({
     role: 'ai',
-    text: failure || (approvals.length ? '' : (result?.answer || '(no text reply)')),
+    text: failure || (approvals.length ? '' : (result?.answer || (question ? '' : '(no text reply)'))),
     taskId: result?.taskId,
     actionResult: documentCardOf(result),
     approvals,
+    question,
     steps: takeSteps()
   })
+}
+
+/** 最后一条答复停在提问上时就是它：这时输入框里发的话是在回答问题，不是开新任务。 */
+function messageAwaitingAnswer() {
+  const last = messages.value[messages.value.length - 1]
+  return last?.role === 'ai' && last.question ? last : null
 }
 
 /** 认下一个会话 id。服务端可能刚为这次请求建了会话，认下它，后面几轮才落在一起。 */
@@ -199,6 +209,10 @@ async function loadHistory() {
 async function ask({ task, model, documentId, workspace } = {}) {
   if (!task || !task.trim() || isThinking.value) return null
 
+  // 任务停在提问上时再开新任务，新任务也会卡在那个没回答的问题上
+  const awaiting = messageAwaitingAnswer()
+  if (awaiting) return answer(awaiting, task)
+
   messages.value.push({ role: 'user', text: task })
   beginRun(task)
 
@@ -221,6 +235,34 @@ async function ask({ task, model, documentId, workspace } = {}) {
   } catch (e) {
     // 不编答案兜底。失败伪装成成功，比直接报错难查得多。
     console.error('Agent call failed', e)
+    reconcileSteps([])
+    messages.value.push({
+      role: 'ai',
+      text: `Failed: ${e.message || 'unknown error'}`,
+      steps: takeSteps()
+    })
+    return null
+  } finally {
+    isThinking.value = false
+    awaitedTask = null
+  }
+}
+
+/** 回答这条答复停下来问的问题，让 run 接着跑。 */
+async function answer(message, text) {
+  const question = message?.question
+  if (!question || !text || !text.trim() || isThinking.value) return null
+
+  message.question = null
+  messages.value.push({ role: 'user', text })
+  beginRun(null)
+
+  try {
+    const res = await agentApi.answerQuestion(message.taskId, { [question.toolCallId]: text })
+    pushResult(res.data)
+    return res.data
+  } catch (e) {
+    console.error('Could not send the answer', e)
     reconcileSteps([])
     messages.value.push({
       role: 'ai',
@@ -313,6 +355,7 @@ export function useAgentChat() {
     startNewSession,
     loadHistory,
     ask,
+    answer,
     approve,
     deny
   }

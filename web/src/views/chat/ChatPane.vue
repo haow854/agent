@@ -34,6 +34,11 @@
                   <div v-else-if="msg.approvalOutcome" class="approval-outcome" :class="msg.approvalOutcome">
                     {{ msg.approvalOutcome === 'approved' ? 'You approved this action' : 'You rejected this action — it did not run' }}
                   </div>
+                  <QuestionPrompt
+                      v-if="msg.question"
+                      :question="msg.question"
+                      @answer="(text) => answer(msg, text)"
+                  />
 
                   <div v-if="msg.actionResult" class="file-card" @click="openDocument(msg.actionResult)">
                     <el-icon size="28" color="var(--brand)"><Document /></el-icon>
@@ -117,12 +122,13 @@ import { openDocument } from '../../utils/openDocument'
 import DocPicker from '../components/DocPicker.vue'
 import AgentSteps from '../components/AgentSteps.vue'
 import ApprovalPrompt from '../components/ApprovalPrompt.vue'
+import QuestionPrompt from '../components/QuestionPrompt.vue'
 
 defineProps({
   userName: { type: String, default: 'User' }
 })
 
-const { messages, steps, isThinking, historyLoading, loadHistory, ask, approve, deny } = useAgentChat()
+const { messages, steps, isThinking, historyLoading, loadHistory, ask, answer, approve, deny } = useAgentChat()
 const { fetchSessions } = useAgentSessions()
 const { modelOptions, currentModel } = useAiModels()
 

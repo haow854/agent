@@ -41,14 +41,14 @@
 | `collab-server/` | 实时协同服务，Agent 通过它读写 Y.Doc | Node.js、Hocuspocus、Yjs |
 | `schemas/` | 前后端共享的 OpenAPI 定义，由后端生成 | springdoc |
 | `eval/` | 黑盒评测：文档操作、多轮对话、工具调用 | Python |
-| `deploy/` | compose、Prometheus 配置、部署脚本 | Docker Swarm |
+| `deploy/` | 单机 compose、构建与部署脚本（各服务的 Dockerfile 在各自目录） | Docker Compose、nginx |
 | `docs/` | Vibe Coding 知识库 | Markdown |
 
 后端包结构（`api/src/main/java/com/javaee/`）：`agentservice`（Agent 编排、模型、工具、会话、记忆）、`documentservice`、`fileservice`、`user`、`aiops`、`common`（公共模型与工具类）、`config`（安全与消息队列）。
 
 ## 本地开发
 
-依赖服务：MySQL 8、Redis 7、RabbitMQ 3.8、MinIO。
+依赖服务：MySQL 8、Redis 7、RabbitMQ 4、MinIO。
 配置：把 `.env.example` 复制为**仓库根目录**的 `.env` 并填写。后端从 `.env` 或 `../.env` 加载，所以从仓库根目录或 `api/` 启动都能读到。
 
 | 模块 | 启动 | 测试 / 检查 |
@@ -59,7 +59,13 @@
 | eval | 后端运行在 8080 时：`cd eval && python -m harness.runner` | `cd eval && python -m harness.runner --dry-run` |
 | schemas | 后端运行时导出，见 [schemas/README.md](schemas/README.md) | |
 
-部署：从仓库根目录执行 `./deploy/deploy.sh`，需要先设置 `DOCAGENT_MANAGER_HOST`。
+完整环境（与线上相同的容器编排，访问 `http://localhost`）：
+
+```bash
+./deploy/build.sh && docker compose --env-file .env -f deploy/docker-compose.yml up -d --build
+```
+
+部署到服务器：`DOCAGENT_HOST=ubuntu@<服务器IP> ./deploy/deploy.sh`。服务器初始化和配置见 [spec F-17](docs/01-product/specs/F-17-deployment.md)。
 
 ## 代码惯例
 
@@ -69,7 +75,9 @@
 - Controller 返回值用 `common/model/Result` 包装（`FileMetadataController` 例外，返回 `ResponseEntity`）
 - 新增 Agent 工具：在 `agentservice/tool/` 新建类，实现 `AgentTool` 并加 `@Component`，`AgentToolRegistry` 会自动发现；同时补对应的 `*ToolTest`
 - 会真实调用模型的测试必须加 `@EnabledIfEnvironmentVariable(named = "RUN_LIVE_MODEL_TESTS", matches = "true")`，默认不跑，因为会产生费用
-- 表结构改动写进 `api/mysql-schema.sql`
+- 文件服务的存储桶和权限取自当前请求的用户（`FileStorageConfig.getBucketName()`）。Agent 在后台线程里执行时没有这个用户，替别人操作时桶也不对，这两种情况要按文件元数据定位文件（如 `FileService.deleteStored`）
+- 一次性的数据清理先试运行看清数量，执行后按存储逐类复扫，确认真的删掉了
+- 表结构改动写进 `api/mysql-schema.sql`；已部署的数据库不会自动更新，要在线上手动执行对应的变更语句
 
 前端：
 
@@ -78,7 +86,9 @@
 
 跨模块（最容易漏）：
 
-- **TipTap 扩展三处同步**：`web/src/editor/DocEditor.vue`、`collab-server/index.js` 的 extensions、`collab-server/markdown.js`。漏一处会静默丢内容
+- **TipTap 扩展两处同步**：`web/src/editor/DocEditor.vue` 和 `collab-server/extensions.js` 的扩展列表要一致，Markdown 的读写规则由扩展自带。漏一处，Agent 读写文档时会丢内容
+- **调协同服务的写接口时不能拿着文档行的事务**：`/ai/*` 写完会当场回存，回存要更新同一行文档记录，持锁调用会互相等到超时。先调协同服务，元数据的事务放在之后（见 `DocumentServiceImpl.restoreVersion`）
+- **调 Spring 接口看 `Result.code`**：业务错误（无权访问、文档不存在）返回的是 HTTP 200 加 `code`，只看 HTTP 状态会把失败当成功
 - **改后端接口后**：重新导出 `schemas/openapi.json`，并同步修改 `web/src/api/`
 - **`COLLAB_AI_SECRET`** 在 api 和 collab-server 两侧必须一致，否则 Agent 读写文档一律 403
 
@@ -86,6 +96,7 @@
 
 - `.env` 里暂时没有值的键要**注释掉，不要留空**：空串会覆盖 `application.yml` 里的默认值
 - 不提交 `.env` 和任何密钥；新增配置项时同步写进 `.env.example`
+- 部署时后端容器通过 `env_file` 读取整份 `.env`，新增配置项不用改 compose；只有容器内外取值不同的项（服务地址、路径）才写进 `deploy/docker-compose.yml`
 
 ## 已知问题
 

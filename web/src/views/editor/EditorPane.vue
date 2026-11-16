@@ -71,6 +71,11 @@
               <div v-else-if="msg.approvalOutcome" class="approval-outcome" :class="msg.approvalOutcome">
                 {{ msg.approvalOutcome === 'approved' ? 'You approved this action' : 'You rejected this action — it did not run' }}
               </div>
+              <QuestionPrompt
+                  v-if="msg.question"
+                  :question="msg.question"
+                  @answer="(text) => answer(msg, text)"
+              />
 
               <div v-if="msg.actionResult" class="file-card" @click="openDocument(msg.actionResult)">
                 <el-icon size="24" color="var(--brand)"><Document /></el-icon>
@@ -150,6 +155,7 @@ import DocEditor from '../../editor/DocEditor.vue'
 import DocPicker from '../components/DocPicker.vue'
 import AgentSteps from '../components/AgentSteps.vue'
 import ApprovalPrompt from '../components/ApprovalPrompt.vue'
+import QuestionPrompt from '../components/QuestionPrompt.vue'
 import { getEditorText } from '../../editor/editorInstance'
 
 const props = defineProps({
@@ -163,7 +169,7 @@ const {
   stopCollaboration
 } = useCollaboration()
 
-const { messages, steps, isThinking, historyLoading, startNewSession, ask, approve, deny } = useAgentChat()
+const { messages, steps, isThinking, historyLoading, startNewSession, ask, answer, approve, deny } = useAgentChat()
 const { modelOptions, currentModel } = useAiModels()
 
 const isSaving = ref(false)
@@ -329,7 +335,7 @@ const handleDownload = async () => {
 .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .user-avatar { background-color: var(--brand); font-weight: 500; color: #fff; }
 .workspace { flex: 1; display: flex; overflow: hidden; position: relative; min-height: 0; }
-.editor-main { flex: 1; overflow-y: auto; background: var(--bg-sunken); position: relative; min-width: 0; }
+.editor-main { flex: 1; overflow-y: auto; background: #fff; position: relative; min-width: 0; }
 
 .left-sidebar {
   width: 220px; background: var(--bg-sunken); border-right: 1px solid var(--border);

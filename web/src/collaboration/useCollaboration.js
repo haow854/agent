@@ -5,7 +5,7 @@
  * 和授权。加入协同后，同步与合并全部由 yjs 处理，持久化由 collab-server
  * 防抖回存到 Spring。
  */
-import { ref, shallowRef, markRaw } from 'vue'
+import { ref, shallowRef, markRaw, watch } from 'vue'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { getAccessToken } from '../utils/session'
 
@@ -39,6 +39,11 @@ const connectionError = ref('')
 const collabUser = ref(null)
 let activeDocumentId = null
 
+// 访问令牌刷新后发给协同服务：它回存时用的是这条连接上的令牌，过期了回存就会被后端拒绝
+watch(getAccessToken, (token) => {
+  if (token) provider.value?.sendToken()
+})
+
 /**
  * 连上这篇文档。换文档就是断掉重连——参数在这里传，不在 useCollaboration
  * 里闭包住，否则换了文档还连着上一篇。
@@ -59,7 +64,8 @@ export function startCollaboration({ documentId, userId, userName }) {
   const instance = new HocuspocusProvider({
     url: collabUrl(),
     name: id,
-    token: getAccessToken() || 'anonymous',
+    // 每次（重新）连接时取当时的令牌，而不是启动时那一个
+    token: () => getAccessToken() || 'anonymous',
     onAuthenticationFailed: ({ reason }) => {
       connectionError.value = `Collaboration auth failed: ${reason || 'no permission'}`
       stopCollaboration()

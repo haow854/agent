@@ -49,6 +49,13 @@ public interface FileService {
     void delete(String fileId);
 
     /**
+     * 删除文件，按元数据里记的桶和对象删，不看当前请求的用户：调用方已经自己授权过（比如
+     * 文档服务按文档的写权限）。{@link #delete} 的桶和权限都取自当前请求的用户，Agent 在
+     * 后台线程里执行时没有这个用户，协作者删别人的文档时桶也不对。文件已经不在时什么都不做。
+     */
+    void deleteStored(String fileId);
+
+    /**
      * 文件重命名
      */
     void rename(String fileId, String newName);

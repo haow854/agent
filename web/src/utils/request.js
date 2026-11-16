@@ -6,6 +6,7 @@ import { ElMessage } from 'element-plus'
 import router from '../router'
 import { RES_CODE } from '../constants'
 import { clearSession, getAccessToken } from './session'
+import { refreshAccessToken } from './tokenRefresh'
 
 const service = axios.create({
     baseURL: '/api',
@@ -89,12 +90,9 @@ service.interceptors.response.use(
         if (res.code === 200 || res.code === 0) {
             reportAiMetrics(response.config, false)
             return res
-        } else if (res.code === RES_CODE.UNAUTHORIZED || res.code === 604 || res.code === 605) {
+        } else if (AUTH_FAILED_CODES.includes(res.code)) {
             reportAiMetrics(response.config, true)
-            ElMessage.error('Your session expired. Please sign in again.')
-            clearSession()
-            router.push('/login')
-            return Promise.reject(new Error(res.message || 'Unauthorized'))
+            return retryWithNewToken(response.config, res.message)
         } else {
             reportAiMetrics(response.config, true)
             ElMessage.error(res.message || 'Action failed')
@@ -105,15 +103,32 @@ service.interceptors.response.use(
         if (error.config) {
             reportAiMetrics(error.config, true)
         }
-        if (error.response && error.response.status === 401) {
-            ElMessage.error('Your session expired. Please sign in again.')
-            clearSession()
-            router.push('/login')
-        } else {
-            ElMessage.error('Something went wrong. Please try again.')
+        if (error.response && error.response.status === 401 && error.config) {
+            return retryWithNewToken(error.config)
         }
+        ElMessage.error('Something went wrong. Please try again.')
         return Promise.reject(error)
     }
 )
+
+// 令牌失效时后端回 HTTP 401，或者 HTTP 200 加这几个 code
+const AUTH_FAILED_CODES = [RES_CODE.UNAUTHORIZED, 604, 605]
+
+/** 访问令牌过期就换一个，把原请求重发一次；刷新令牌也失效才退出登录。 */
+async function retryWithNewToken(config, message) {
+    if (!config._retried) {
+        try {
+            await refreshAccessToken()
+            config._retried = true
+            return service(config)  // 请求拦截器会带上新令牌
+        } catch {
+            // 换不到新令牌，往下走退出登录
+        }
+    }
+    ElMessage.error('Your session expired. Please sign in again.')
+    clearSession()
+    router.push('/login')
+    return Promise.reject(new Error(message || 'Unauthorized'))
+}
 
 export default service

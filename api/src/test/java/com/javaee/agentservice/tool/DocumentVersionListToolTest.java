@@ -30,13 +30,13 @@ class DocumentVersionListToolTest {
      * Every version holds a whole copy of the document. A listing that returned
      * them verbatim would put one document per version onto the message chain,
      * which the current run cannot trim — and the model picks a version number,
-     * for which a line of preview is enough.
+     * for which the stored summary is enough.
      */
     @Test
     @SuppressWarnings("unchecked")
-    void describesEachVersionWithoutPuttingItsWholeBodyOnTheChain() {
+    void describesEachVersionByItsSummary() {
         when(documentService.getVersions(eq("doc-1"), eq(7L)))
-                .thenReturn(List.of(version(1, "第一稿", "x".repeat(5000))));
+                .thenReturn(List.of(version(1, "第一稿", "季度总结：营收增长 12%")));
 
         AgentToolResult result = tool.execute("task-1:call-a",
                 Map.of("documentId", "doc-1"), state());
@@ -47,8 +47,7 @@ class DocumentVersionListToolTest {
             assertThat(described).doesNotContainKey("content");
             assertThat(described).containsEntry("versionNumber", 1);
             assertThat(described).containsEntry("changeLog", "第一稿");
-            assertThat(described).containsEntry("contentLength", 5000);
-            assertThat((String) described.get("contentPreview")).hasSizeLessThan(200);
+            assertThat(described).containsEntry("summary", "季度总结：营收增长 12%");
         });
     }
 
@@ -64,11 +63,11 @@ class DocumentVersionListToolTest {
         assertThat(result.getData()).containsEntry("versionCount", 0);
     }
 
-    private DocumentVersion version(int number, String changeLog, String content) {
+    private DocumentVersion version(int number, String changeLog, String summary) {
         DocumentVersion version = new DocumentVersion();
         version.setVersionNumber(number);
         version.setChangeLog(changeLog);
-        version.setContent(content);
+        version.setSummary(summary);
         version.setTitle("标题");
         return version;
     }

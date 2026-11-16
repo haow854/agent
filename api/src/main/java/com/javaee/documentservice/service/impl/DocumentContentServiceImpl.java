@@ -6,6 +6,7 @@ import com.javaee.common.security.BucketPermissionService;
 import com.javaee.documentservice.service.DocumentContentService;
 import io.minio.*;
 import io.minio.errors.ErrorResponseException;
+import io.minio.messages.Item;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 文档内容服务实现类
@@ -126,37 +129,70 @@ public class DocumentContentServiceImpl implements DocumentContentService {
     }
 
     @Override
-    public boolean deleteContent(String documentId, Long userId) {
-        String bucketName = getBucketName(userId);
-        bucketPermissionService.assertCanAccess(bucketName);
-        return deleteContent(documentId, bucketName);
+    public void deleteContent(String documentId, String bucketName) {
+        validateBucketName(bucketName);
+        List<String> keys = new ArrayList<>(List.of(getObjectName(documentId), ydocObjectName(documentId)));
+        try {
+            for (Result<Item> version : minioClient.listObjects(ListObjectsArgs.builder()
+                    .bucket(bucketName).prefix(versionPrefix(documentId)).recursive(true).build())) {
+                keys.add(version.get().objectName());
+            }
+        } catch (Exception e) {
+            if (!isMissingStorageObject(e)) {
+                throw new BusinessException("文档内容删除失败: " + e.getMessage());
+            }
+        }
+        for (String key : keys) {
+            try {
+                minioClient.removeObject(RemoveObjectArgs.builder().bucket(bucketName).object(key).build());
+            } catch (Exception e) {
+                // 已经不在就是要的结果：删到一半失败后重删，前面删掉的那些会落到这里
+                if (!isMissingStorageObject(e)) {
+                    throw new BusinessException("文档内容删除失败: " + e.getMessage());
+                }
+            }
+        }
+        logger.info("Document content deleted, documentId: {}, bucket: {}, objects: {}", documentId, bucketName, keys.size());
     }
 
     @Override
-    public boolean deleteContent(String documentId, String bucketName) {
+    public void saveVersionContent(String documentId, String versionId, String bucketName, String content) {
+        byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
         try {
             validateBucketName(bucketName);
-            String contentKey = getObjectName(documentId);
-            logger.info("Deleting document content from MinIO, bucket: {}, key: {}", bucketName, contentKey);
-            
-            minioClient.removeObject(
-                    RemoveObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(contentKey)
-                            .build()
-            );
-            logger.info("Document content deleted successfully, documentId: {}", documentId);
-            return true;
+            ensureBucketExists(bucketName);
+            minioClient.putObject(PutObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(versionObjectName(documentId, versionId))
+                    .stream(new java.io.ByteArrayInputStream(bytes), bytes.length, -1)
+                    .contentType("text/markdown; charset=UTF-8")
+                    .build());
         } catch (Exception e) {
-            if (isMissingStorageObject(e)) {
-                // Delete is idempotent: missing MinIO content already satisfies the requested final state.
-                logger.warn("Document content already absent in MinIO, documentId: {}, bucket: {}, error: {}",
-                        documentId, bucketName, e.getMessage());
-                return true;
-            }
-            logger.error("Failed to delete document content from MinIO, documentId: {}", documentId, e);
-            throw new BusinessException("文档内容删除失败: " + e.getMessage());
+            throw new BusinessException("版本正文保存失败: " + e.getMessage());
         }
+    }
+
+    @Override
+    public String getVersionContent(String documentId, String versionId, String bucketName) {
+        try {
+            validateBucketName(bucketName);
+            try (InputStream in = minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(versionObjectName(documentId, versionId))
+                    .build())) {
+                return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            }
+        } catch (Exception e) {
+            throw new BusinessException("版本正文读取失败: " + e.getMessage());
+        }
+    }
+
+    private String versionPrefix(String documentId) {
+        return "document-versions/" + documentId + "/";
+    }
+
+    private String versionObjectName(String documentId, String versionId) {
+        return versionPrefix(documentId) + versionId + ".md";
     }
 
     @Override

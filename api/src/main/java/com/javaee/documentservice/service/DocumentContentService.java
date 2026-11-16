@@ -37,16 +37,19 @@ public interface DocumentContentService {
     long getContentSize(String documentId, String bucketName);
 
     /**
-     * 删除MinIO中的文档内容
-     * @param documentId 文档ID
-     * @return 是否成功
+     * 删除指定桶中文档的全部对象：正文、协同状态和各版本的正文。已经不在的对象跳过。
      */
-    boolean deleteContent(String documentId, Long userId);
+    void deleteContent(String documentId, String bucketName);
 
     /**
-     * 删除指定MinIO桶中的文档内容。
+     * 保存一个版本的正文。按版本 id 存，因为版本号不保证唯一。
      */
-    boolean deleteContent(String documentId, String bucketName);
+    void saveVersionContent(String documentId, String versionId, String bucketName, String content);
+
+    /**
+     * 读一个版本的正文。
+     */
+    String getVersionContent(String documentId, String versionId, String bucketName);
 
     /**
      * 更新MinIO中的文档内容

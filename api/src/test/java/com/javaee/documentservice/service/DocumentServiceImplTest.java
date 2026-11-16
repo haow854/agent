@@ -8,6 +8,9 @@ import com.javaee.documentservice.dto.DocumentCreateDTO;
 import com.javaee.documentservice.dto.DocumentUpdateDTO;
 import com.javaee.documentservice.entity.Document;
 import com.javaee.documentservice.entity.DocumentVersion;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.javaee.documentservice.mapper.DocumentAnnotationMapper;
+import com.javaee.documentservice.mapper.DocumentCommentMapper;
 import com.javaee.documentservice.mapper.DocumentMapper;
 import com.javaee.documentservice.mapper.DocumentVersionMapper;
 import com.javaee.documentservice.service.impl.DocumentServiceImpl;
@@ -15,6 +18,7 @@ import com.javaee.documentservice.vo.DocumentVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionCallback;
@@ -27,9 +31,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -39,6 +47,8 @@ class DocumentServiceImplTest {
 
     private DocumentMapper documentMapper;
     private DocumentVersionMapper documentVersionMapper;
+    private DocumentCommentMapper documentCommentMapper;
+    private DocumentAnnotationMapper documentAnnotationMapper;
     private DocumentContentService documentContentService;
     private DocumentAccessService documentAccessService;
     private FileServiceClient fileServiceClient;
@@ -49,6 +59,8 @@ class DocumentServiceImplTest {
     void setUp() {
         documentMapper = mock(DocumentMapper.class);
         documentVersionMapper = mock(DocumentVersionMapper.class);
+        documentCommentMapper = mock(DocumentCommentMapper.class);
+        documentAnnotationMapper = mock(DocumentAnnotationMapper.class);
         documentContentService = mock(DocumentContentService.class);
         documentAccessService = mock(DocumentAccessService.class);
         fileServiceClient = mock(FileServiceClient.class);
@@ -58,10 +70,13 @@ class DocumentServiceImplTest {
         TransactionTemplate transactionTemplate = mock(TransactionTemplate.class);
         when(transactionTemplate.execute(any())).thenAnswer(invocation ->
                 invocation.getArgument(0, TransactionCallback.class).doInTransaction(null));
+        doCallRealMethod().when(transactionTemplate).executeWithoutResult(any());
 
         documentService = new DocumentServiceImpl();
         ReflectionTestUtils.setField(documentService, "documentMapper", documentMapper);
         ReflectionTestUtils.setField(documentService, "documentVersionMapper", documentVersionMapper);
+        ReflectionTestUtils.setField(documentService, "documentCommentMapper", documentCommentMapper);
+        ReflectionTestUtils.setField(documentService, "documentAnnotationMapper", documentAnnotationMapper);
         ReflectionTestUtils.setField(documentService, "documentContentService", documentContentService);
         ReflectionTestUtils.setField(documentService, "documentAccessService", documentAccessService);
         ReflectionTestUtils.setField(documentService, "fileServiceClient", fileServiceClient);
@@ -220,7 +235,29 @@ class DocumentServiceImplTest {
 
         documentService.update("doc-6", dto, 1L);
 
-        verify(documentVersionMapper).insert(any(DocumentVersion.class));
+        ArgumentCaptor<DocumentVersion> saved = ArgumentCaptor.forClass(DocumentVersion.class);
+        InOrder order = inOrder(documentContentService, documentVersionMapper);
+        order.verify(documentContentService).saveVersionContent(
+                eq("doc-6"), any(String.class), eq("owner-bucket"), eq("<p>旧内容</p>"));
+        order.verify(documentVersionMapper).insert(saved.capture());
+        assertThat(saved.getValue().getId()).isNotBlank();
+        verify(documentContentService).saveVersionContent("doc-6", saved.getValue().getId(), "owner-bucket", "<p>旧内容</p>");
+    }
+
+    /** 版本正文写不进对象存储时不留版本记录，不会有一条读不出正文的版本。 */
+    @Test
+    void noVersionRecordWhenItsContentCannotBeStored() {
+        Document document = document("doc-11", 1L, "owner-bucket", "document-content/doc-11.md");
+        when(documentMapper.selectById("doc-11")).thenReturn(document);
+        when(documentContentService.getContent("doc-11", "owner-bucket")).thenReturn("旧内容");
+        doThrow(new BusinessException("版本正文保存失败: timeout")).when(documentContentService)
+                .saveVersionContent(eq("doc-11"), any(String.class), eq("owner-bucket"), eq("旧内容"));
+
+        DocumentUpdateDTO dto = new DocumentUpdateDTO();
+        dto.setContent("新内容");
+
+        assertThatThrownBy(() -> documentService.update("doc-11", dto, 1L)).isInstanceOf(BusinessException.class);
+        verify(documentVersionMapper, never()).insert(any(DocumentVersion.class));
     }
 
     /** 协同状态和正文存在同一个桶里，读写各自要读写权限。 */
@@ -248,6 +285,108 @@ class DocumentServiceImplTest {
         when(documentContentService.getYdocState("doc-8", "owner-bucket")).thenReturn(null);
 
         assertThat(documentService.getYdocState("doc-8", 1L)).isNull();
+    }
+
+    /** 恢复经协同服务替换正文；恢复前的内容以协同服务里的为准，存成历史版本。 */
+    @Test
+    void restoreWritesThroughTheCollabServerAndKeepsWhatItReplaced() {
+        Document document = document("doc-7", 1L, "owner-bucket", "document-content/doc-7.md");
+        document.setVersion(5);
+        when(documentMapper.selectById("doc-7")).thenReturn(document);
+        when(documentVersionMapper.selectByDocumentIdAndVersion("doc-7", 1)).thenReturn(version("原标题"));
+        when(documentContentService.getVersionContent("doc-7", "ver-1", "owner-bucket")).thenReturn("# 原文");
+        when(collab.overwrite("doc-7", 1L, "# 原文")).thenReturn("# 恢复前");
+
+        DocumentVO restored = documentService.restoreVersion("doc-7", 1, 1L);
+
+        ArgumentCaptor<DocumentVersion> saved = ArgumentCaptor.forClass(DocumentVersion.class);
+        verify(documentVersionMapper).insert(saved.capture());
+        verify(documentContentService).saveVersionContent("doc-7", saved.getValue().getId(), "owner-bucket", "# 恢复前");
+        assertThat(saved.getValue().getVersionNumber()).isEqualTo(5);
+        assertThat(saved.getValue().getChangeLog()).isEqualTo("恢复到版本1");
+        verify(documentContentService, never()).updateContent(any(String.class), any(String.class), any(String.class));
+        assertThat(restored.getTitle()).isEqualTo("原标题");
+        assertThat(restored.getContent()).isEqualTo("# 原文");
+        assertThat(restored.getVersion()).isEqualTo(6);
+    }
+
+    /** 协同服务写不进去就什么都不记：不留恢复前的版本，元数据也不动。 */
+    @Test
+    void restoreChangesNothingWhenTheCollabServerRefuses() {
+        Document document = document("doc-8", 1L, "owner-bucket", "document-content/doc-8.md");
+        when(documentMapper.selectById("doc-8")).thenReturn(document);
+        when(documentVersionMapper.selectByDocumentIdAndVersion("doc-8", 1)).thenReturn(version("原标题"));
+        when(documentContentService.getVersionContent("doc-8", "ver-1", "owner-bucket")).thenReturn("# 原文");
+        when(collab.overwrite("doc-8", 1L, "# 原文")).thenThrow(new BusinessException("协同服务写入失败: forbidden"));
+
+        assertThatThrownBy(() -> documentService.restoreVersion("doc-8", 1, 1L))
+                .isInstanceOf(BusinessException.class);
+        verify(documentVersionMapper, never()).insert(any(DocumentVersion.class));
+        verify(documentMapper, never()).updateById(any(Document.class));
+    }
+
+    /** 删除是永久的：存储里的正文和协同状态、原始文件、版本、评论、批注、授权和文档记录一起删掉。 */
+    @Test
+    void deleteRemovesEverythingTheDocumentOwns() {
+        Document document = document("doc-9", 1L, "owner-bucket", "document-content/doc-9.md");
+        document.setFileId("file-9");
+        when(documentMapper.selectById("doc-9")).thenReturn(document);
+        when(documentAccessService.isOwner(document, 1L)).thenReturn(true);
+
+        documentService.delete("doc-9", 1L);
+
+        verify(documentContentService).deleteContent("doc-9", "owner-bucket");
+        verify(fileServiceClient).delete("file-9");
+        verify(documentVersionMapper).delete(any(QueryWrapper.class));
+        verify(documentCommentMapper).delete(any(QueryWrapper.class));
+        verify(documentAnnotationMapper).delete(any(QueryWrapper.class));
+        verify(documentAccessService).revokeAll("doc-9");
+        verify(documentMapper).deleteById("doc-9");
+    }
+
+    /** 协作者有写权限也删不了别人的文档：删了找不回。 */
+    @Test
+    void onlyTheOwnerCanDelete() {
+        Document document = document("doc-11", 1L, "owner-bucket", "document-content/doc-11.md");
+        when(documentMapper.selectById("doc-11")).thenReturn(document);
+
+        assertThatThrownBy(() -> documentService.delete("doc-11", 2L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("所有者");
+        verify(documentContentService, never()).deleteContent(any(String.class), any(String.class));
+        verify(documentMapper, never()).deleteById(any(String.class));
+    }
+
+    /** 已经不在的文档再删一次什么都不做：Agent 恢复出来的 run 会重放删除。 */
+    @Test
+    void deletingADocumentThatIsAlreadyGoneDoesNothing() {
+        documentService.delete("doc-gone", 1L);
+
+        verify(documentContentService, never()).deleteContent(any(String.class), any(String.class));
+        verify(documentMapper, never()).deleteById(any(String.class));
+    }
+
+    /** 存储删不掉时记录留着，再删一次能把剩下的删完。 */
+    @Test
+    void storageFailureKeepsTheRecordSoTheDeleteCanBeRetried() {
+        Document document = document("doc-10", 1L, "owner-bucket", "document-content/doc-10.md");
+        when(documentMapper.selectById("doc-10")).thenReturn(document);
+        when(documentAccessService.isOwner(document, 1L)).thenReturn(true);
+        doThrow(new BusinessException("文档内容删除失败: timeout"))
+                .when(documentContentService).deleteContent("doc-10", "owner-bucket");
+
+        assertThatThrownBy(() -> documentService.delete("doc-10", 1L)).isInstanceOf(BusinessException.class);
+        verify(documentVersionMapper, never()).delete(any(QueryWrapper.class));
+        verify(documentMapper, never()).deleteById(any(String.class));
+    }
+
+    private DocumentVersion version(String title) {
+        DocumentVersion version = new DocumentVersion();
+        version.setId("ver-1");
+        version.setVersionNumber(1);
+        version.setTitle(title);
+        version.setKeywords("[]");
+        return version;
     }
 
     private Document document(String id, Long userId, String bucketName, String objectName) {

@@ -146,7 +146,7 @@
                     size="small" icon="Upload"
                     @click="triggerUpload">Upload</el-button>
                 <el-button
-                    v-if="docList.length"
+                    v-if="myDocs.length"
                     type="danger" size="small" plain icon="Delete"
                     @click="clearDirtyData">Clear all</el-button>
               </div>
@@ -167,7 +167,7 @@
                       <template #dropdown>
                         <el-dropdown-menu>
                           <el-dropdown-item command="download" icon="Download">Download</el-dropdown-item>
-                          <el-dropdown-item command="delete" icon="Delete" style="color: var(--danger)">Delete document</el-dropdown-item>
+                          <el-dropdown-item v-if="doc.mine" command="delete" icon="Delete" style="color: var(--danger)">Delete document</el-dropdown-item>
                         </el-dropdown-menu>
                       </template>
                     </el-dropdown>
@@ -198,7 +198,6 @@
 import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { fileApi } from '../../api/file'
 import { userApi } from '../../api/user'
 import { docApi } from '../../api/document'
 import { agentApi } from '../../api/agent'
@@ -244,6 +243,16 @@ const fetchUser = async () => {
 }
 
 // 获取文档列表 (从 8084 获取)
+// 列表里也有别人分享给我的文档；只有自己的文档能删
+const toCard = (item) => ({
+  id: item.id,
+  fileId: item.fileId,
+  name: item.title || 'Untitled',
+  time: item.createTime ? new Date(item.createTime).toLocaleDateString() : 'Unknown',
+  analyzed: !!item.summary,
+  mine: String(item.userId) === getCurrentUserId()
+})
+
 const fetchFiles = async () => {
   const uid = getCurrentUserId()
   if (!uid) {
@@ -254,13 +263,7 @@ const fetchFiles = async () => {
   try {
     const res = await docApi.getUserDocs(uid)
     if (res.data && Array.isArray(res.data)) {
-      docList.value = res.data.map(item => ({
-        id: item.id,
-        fileId: item.fileId,
-        name: item.title || 'Untitled',
-        time: item.createTime ? new Date(item.createTime).toLocaleDateString() : 'Unknown',
-        analyzed: !!item.summary
-      }))
+      docList.value = res.data.map(toCard)
     }
   } catch (e) {
     console.error('拉取列表失败', e)
@@ -283,13 +286,7 @@ const handleSearch = async () => {
     const res = await docApi.searchDocs(search.value)
 
     if (res.data) {
-      docList.value = res.data.map(item => ({
-        id: item.id,
-        fileId: item.fileId,
-        name: item.title || 'Untitled',
-        time: item.createTime ? new Date(item.createTime).toLocaleDateString() : 'Unknown',
-        analyzed: !!item.summary
-      }))
+      docList.value = res.data.map(toCard)
     }
     ElMessage.success(`Found ${docList.value.length} matching documents`)
   } catch (e) {
@@ -330,7 +327,6 @@ const handleCardCommand = async (cmd, doc) => {
       loading.value = true
       try {
         await docApi.deleteDoc(doc.id)
-        if (doc.fileId) await fileApi.delete(doc.fileId).catch(()=>{})
         ElMessage.success('Deleted')
         fetchFiles()
       } catch (e) { ElMessage.error('Delete failed') }
@@ -365,20 +361,22 @@ const handleCardCommand = async (cmd, doc) => {
 }
 
 // 一键清理文档
+const myDocs = computed(() => docList.value.filter(d => d.mine))
+
 const clearDirtyData = () => {
-  ElMessageBox.confirm(`This permanently deletes all ${docList.value.length} documents. Continue?`, 'Clear all documents', {
+  ElMessageBox.confirm(`This permanently deletes all ${myDocs.value.length} of your documents. Documents shared with you are kept. Continue?`, 'Clear all documents', {
     confirmButtonText: 'Delete',
     cancelButtonText: 'Cancel',
     type: 'warning'
   }).then(async () => {
     loading.value = true
-    for (const doc of docList.value) {
+    for (const doc of myDocs.value) {
       await docApi.deleteDoc(doc.id).catch(()=>{})
     }
-    docList.value = []
     loading.value = false
-    ElMessage.success('All documents cleared')
-  })
+    ElMessage.success('Your documents were cleared')
+    fetchFiles()
+  }).catch(() => {})
 }
 
 

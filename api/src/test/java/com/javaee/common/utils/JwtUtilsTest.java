@@ -1,6 +1,7 @@
 package com.javaee.common.utils;
 
 import com.javaee.common.constant.CommonConstant;
+import com.javaee.common.exception.TokenException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.WeakKeyException;
@@ -43,6 +44,33 @@ public class JwtUtilsTest {
         new JwtUtils(TEST_SECRET);
 
         assertThat(JwtUtils.getUserId(existingToken)).isEqualTo(7L);
+    }
+
+    /** 访问令牌只能调接口，刷新令牌只能换新的访问令牌，互相顶替不了。 */
+    @Test
+    void accessAndRefreshTokensCannotStandInForEachOther() {
+        new JwtUtils(TEST_SECRET);
+        String access = JwtUtils.generateToken(42L, "alice", "user");
+        String refresh = JwtUtils.generateRefreshToken(42L);
+
+        assertThat(JwtUtils.parseAccessToken(access).get(CommonConstant.TOKEN_CLAIM_USER_ID, Long.class)).isEqualTo(42L);
+        assertThat(JwtUtils.parseRefreshToken(refresh).get(CommonConstant.TOKEN_CLAIM_USER_ID, Long.class)).isEqualTo(42L);
+        assertThatThrownBy(() -> JwtUtils.parseAccessToken(refresh)).isInstanceOf(TokenException.class);
+        assertThatThrownBy(() -> JwtUtils.parseRefreshToken(access)).isInstanceOf(TokenException.class);
+    }
+
+    /** 没有类型的旧令牌两边都不认，重新登录一次即可。 */
+    @Test
+    void tokensWithoutATypeAreRejected() {
+        new JwtUtils(TEST_SECRET);
+        String untyped = Jwts.builder()
+                .claim(CommonConstant.TOKEN_CLAIM_USER_ID, 7L)
+                .setExpiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(Keys.hmacShaKeyFor(TEST_SECRET.getBytes(StandardCharsets.UTF_8)))
+                .compact();
+
+        assertThatThrownBy(() -> JwtUtils.parseAccessToken(untyped)).isInstanceOf(TokenException.class);
+        assertThatThrownBy(() -> JwtUtils.parseRefreshToken(untyped)).isInstanceOf(TokenException.class);
     }
 
     @Test

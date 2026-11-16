@@ -39,3 +39,22 @@ export function documentCardOfToolResult(result) {
 export function approvalsOf(result) {
   return (result?.pending || []).filter(p => p?.kind === 'APPROVAL' && p.toolCallId)
 }
+
+/**
+ * run 停下来向用户提问时（ask_user），那个问题。
+ *
+ * 候选项在模型传给 ask_user 的参数里，是一个分号分隔的字符串。
+ */
+export function questionOf(result) {
+  const pending = (result?.pending || []).find(p => p?.kind === 'ASK_USER' && p.toolCallId)
+  return pending ? toQuestion(pending.toolCallId, pending.params || { question: pending.question }) : null
+}
+
+/** 从 ask_user 的调用参数还原问题；历史里只有参数，没有 pending 条目。 */
+export function toQuestion(toolCallId, params) {
+  const options = String(params?.options || '')
+    .split(/[;；]/)
+    .map(o => o.trim())
+    .filter(Boolean)
+  return { toolCallId, text: params?.question || '', options }
+}

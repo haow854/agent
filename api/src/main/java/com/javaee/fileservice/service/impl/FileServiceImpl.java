@@ -1,6 +1,8 @@
 package com.javaee.fileservice.service.impl;
 
 import com.javaee.fileservice.config.FileStorageConfig;
+import com.javaee.fileservice.entity.FileMetadata;
+import com.javaee.fileservice.mapper.FileMetadataMapper;
 import com.javaee.common.security.BucketPermissionService;
 import com.javaee.fileservice.service.FileMetadataService;
 import com.javaee.fileservice.service.FileService;
@@ -41,6 +43,9 @@ public class FileServiceImpl implements FileService {
 
     @Autowired
     private FileMetadataService fileMetadataService;
+
+    @Autowired
+    private FileMetadataMapper fileMetadataMapper;
 
     @Autowired
     private MinioClient minioClient;
@@ -419,6 +424,27 @@ public class FileServiceImpl implements FileService {
         } catch (Exception e) {
             throw new RuntimeException("文件下载失败: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void deleteStored(String fileId) {
+        FileMetadata metadata = fileMetadataMapper.selectByFileId(fileId);
+        if (metadata == null) {
+            return;
+        }
+        try {
+            if ("local".equals(metadata.getStorageType())) {
+                Files.deleteIfExists(Paths.get(fileStorageConfig.getLocalPath(), metadata.getObjectKey()));
+            } else {
+                minioClient.removeObject(RemoveObjectArgs.builder()
+                        .bucket(metadata.getBucketName())
+                        .object(metadata.getObjectKey())
+                        .build());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("文件删除失败: " + e.getMessage(), e);
+        }
+        fileMetadataMapper.deleteById(metadata.getId());
     }
 
     @Override

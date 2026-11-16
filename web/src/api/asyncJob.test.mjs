@@ -24,6 +24,23 @@ test('runAsyncJob submits once and polls until success', async () => {
   assert.deepEqual(result, { answer: 'done' })
 })
 
+test('runAsyncJob keeps polling a long-running job until it finishes', async () => {
+  let polls = 0
+  const runner = createAsyncJobRunner({
+    submit: async () => ({ data: { jobId: 'job-3' } }),
+    getJob: async (jobId) => {
+      polls++
+      return polls < 1000
+        ? { data: { jobId, status: polls < 5 ? 'queued' : 'running' } }
+        : { data: { jobId, status: 'success', result: { answer: 'late' } } }
+    },
+    delay: async () => {}
+  })
+
+  assert.deepEqual(await runner.runAsyncJob(), { answer: 'late' })
+  assert.equal(polls, 1000)
+})
+
 test('runAsyncJob throws failed job error', async () => {
   const runner = createAsyncJobRunner({
     submit: async () => ({ data: { jobId: 'job-2' } }),

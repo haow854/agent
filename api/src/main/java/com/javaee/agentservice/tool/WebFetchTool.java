@@ -1,5 +1,7 @@
 package com.javaee.agentservice.tool;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.javaee.agentservice.config.McpConnections;
 import com.javaee.agentservice.model.AgentState;
 import com.javaee.agentservice.model.AgentToolResult;
@@ -7,14 +9,20 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
+/**
+ * 读取公开网页的正文，调联网搜索那个 Tavily MCP 服务的 tavily_extract。
+ *
+ * <p>网页由 Tavily 的服务器下载，请求不从本机发出，所以碰不到本机所在的内网和云服务器元数据接口。
+ * Tavily 一次返回整页，分页在这里切。</p>
+ */
 @Component
 public class WebFetchTool implements AgentTool {
+
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     @Autowired
     private McpConnections connections;
@@ -24,7 +32,7 @@ public class WebFetchTool implements AgentTool {
         return AgentToolDefinition.tool("web_fetch")
                 .desc("读取一个公开网页的正文，返回 markdown。"
                         + "内容是外部来源，引用时注明链接。"
-                        + "整页装不下时只返回一段，把 start_index 设成上次结束的位置继续读，"
+                        + "整页装不下时只返回一段，结果里的 nextStartIndex 就是下一段的 start_index，"
                         + "用法同 document_read 的 offset。"
                         + "网页很长或要读多个网页时，交给 subagent。"
                         + "只支持 http/https 公网地址。")
@@ -41,18 +49,12 @@ public class WebFetchTool implements AgentTool {
                                    Map<String, Object> params,
                                    AgentState state) {
         String url = ToolArgs.require(params, "url");
-        String violation = publicUrlViolation(url);
-        if (violation != null) {
-            return AgentToolResult.error("web_fetch", violation);
-        }
         int maxLength = ToolArgs.intValue(params.get("max_length"), 8000);
         int startIndex = ToolArgs.intValue(params.get("start_index"), 0);
         McpSchema.CallToolResult result;
         try {
-            result = connections.fetch().callTool(new McpSchema.CallToolRequest("fetch", Map.of(
-                    "url", url,
-                    "max_length", maxLength,
-                    "start_index", startIndex)));
+            result = connections.search().callTool(new McpSchema.CallToolRequest(
+                    "tavily_extract", Map.of("urls", List.of(url))));
         } catch (IllegalStateException e) {
             return AgentToolResult.error("web_fetch", e.getMessage());
         } catch (Exception e) {
@@ -62,48 +64,35 @@ public class WebFetchTool implements AgentTool {
         if (Boolean.TRUE.equals(result.isError())) {
             return AgentToolResult.error("web_fetch", "网页读取失败：" + text);
         }
+        // 读不到的网页（地址不合法、超时、被拦）不在 results 里，原因在 failed_results 或 error 里，
+        // 这时 MCP 结果并不标记出错，要看内容
+        JsonNode page;
+        try {
+            page = JSON.readTree(text).path("results").path(0);
+        } catch (Exception e) {
+            return AgentToolResult.error("web_fetch", "网页读取失败：" + text);
+        }
+        if (page.isMissingNode()) {
+            return AgentToolResult.error("web_fetch", "网页读取失败：" + text);
+        }
+
+        String content = page.path("raw_content").asText("");
+        int total = content.length();
+        if (total > 0 && startIndex >= total) {
+            return AgentToolResult.error("web_fetch", "已经读到结尾：正文共 " + total + " 字");
+        }
+        int end = Math.min(total, startIndex + maxLength);
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("url", url);
+        data.put("url", page.path("url").asText(url));
+        if (!page.path("title").asText("").isBlank()) {
+            data.put("title", page.path("title").asText());
+        }
         data.put("startIndex", startIndex);
-        data.put("content", text);
+        data.put("totalLength", total);
+        data.put("content", content.substring(Math.min(startIndex, total), end));
+        if (end < total) {
+            data.put("nextStartIndex", end);
+        }
         return AgentToolResult.success("web_fetch", "网页读取完成", data);
-    }
-
-    static String publicUrlViolation(String raw) {
-        URI uri;
-        try {
-            uri = URI.create(raw.trim());
-        } catch (IllegalArgumentException e) {
-            return "URL 无法解析：" + raw;
-        }
-        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
-        if (!scheme.equals("http") && !scheme.equals("https")) {
-            return "只支持 http/https 地址";
-        }
-        if (uri.getHost() == null) {
-            return "URL 缺少主机名：" + raw;
-        }
-        InetAddress[] addresses;
-        try {
-            addresses = InetAddress.getAllByName(uri.getHost());
-        } catch (UnknownHostException e) {
-            return "域名无法解析：" + uri.getHost();
-        }
-        for (InetAddress address : addresses) {
-            if (address.isLoopbackAddress()
-                    || address.isAnyLocalAddress()
-                    || address.isLinkLocalAddress()
-                    || address.isSiteLocalAddress()
-                    || address.isMulticastAddress()
-                    || isUniqueLocalIpv6(address)) {
-                return "该地址属于内网或保留网段，不允许抓取：" + uri.getHost();
-            }
-        }
-        return null;
-    }
-
-    private static boolean isUniqueLocalIpv6(InetAddress address) {
-        byte[] bytes = address.getAddress();
-        return bytes.length == 16 && (bytes[0] & 0xFE) == 0xFC;
     }
 }

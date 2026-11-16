@@ -1,4 +1,4 @@
-import { documentCardOfToolResult } from './agentResult'
+import { documentCardOfToolResult, toQuestion } from './agentResult.js'
 
 /**
  * 把服务端的会话历史转成聊天气泡。
@@ -10,14 +10,16 @@ export function toChatMessages(entries) {
     const messages = []
     let steps = []
     let actionResult = null
+    let lastTaskId = null
 
-    const flush = (entry, text) => {
-        messages.push({ role: 'ai', text, taskId: entry?.taskId, steps, actionResult })
+    const flush = (taskId, text, question = null) => {
+        messages.push({ role: 'ai', text, taskId, steps, actionResult, question })
         steps = []
         actionResult = null
     }
 
     for (const e of entries || []) {
+        if (e.taskId) lastTaskId = e.taskId
         if (e.role === 'user') {
             messages.push({ role: 'user', text: e.content, taskId: e.taskId })
             steps = []
@@ -28,7 +30,7 @@ export function toChatMessages(entries) {
             const calls = e.toolCalls || []
             // 不带工具调用的那一轮是终轮，它的文字就是答复
             if (!calls.length) {
-                if (e.content) flush(e, e.content)
+                if (e.content) flush(e.taskId, e.content)
                 continue
             }
             if (e.content && e.content.trim()) steps.push({ type: 'text', text: e.content })
@@ -56,9 +58,14 @@ export function toChatMessages(entries) {
         }
     }
 
-    // 跑到一半停下的轮次（等审批、失败、被取消）没有终轮答复，
+    // 跑到一半停下的轮次（等审批、等回答、失败、被取消）没有终轮答复，
     // 步骤不能跟着丢——那正是最需要看见发生过什么的时候。
-    if (steps.length) flush(null, '')
+    // 最后一次 ask_user 还没有回答，就是任务还停在这个问题上：还原成问题卡片。
+    if (steps.length) {
+        const asking = steps.find((s) => s.type === 'tool' && s.name === 'ask_user' && s.status === 'running')
+        if (asking) steps = steps.filter((s) => s !== asking)
+        flush(lastTaskId, '', asking ? toQuestion(asking.id, parseResult(asking.args)) : null)
+    }
     return messages
 }
 

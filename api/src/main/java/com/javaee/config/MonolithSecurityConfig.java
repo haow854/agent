@@ -45,15 +45,14 @@ public class MonolithSecurityConfig {
                         .requestMatchers(
                                 "/",
                                 "/index.html",
-                                "/agent-workbench.html",
                                 "/static/**",
                                 "/public/**",
                                 "/error"
                         ).permitAll()
                         // 只放行健康检查；其余 actuator 端点（env/heapdump 等）需要认证。
                         .requestMatchers("/actuator/health").permitAll()
-                        // TODO(2b)：STOMP 握手目前无认证，且 /topic/agent/progress 是全局广播。
-                        // 认证要在 CONNECT 帧上做，不是在这里，所以先保持放行。见 readme。
+                        // WebSocket 握手带不了令牌，这里放行；登录校验在 STOMP 的 CONNECT 帧上
+                        // （StompAuthInterceptor），进度也只推给任务所属的用户。
                         .requestMatchers("/ws/**").permitAll()
                         // TODO：swagger 应按 profile 开关，不该在生产环境无条件放行。
                         .requestMatchers(

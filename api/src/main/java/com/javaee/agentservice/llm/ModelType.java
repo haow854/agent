@@ -1,7 +1,7 @@
 package com.javaee.agentservice.llm;
 
 public enum ModelType {
-    DEEPSEEK_V4_PRO("deepseek-v4-pro", "DeepSeek V4 Pro"),
+    DEEPSEEK_V4_PRO("deepseek-v4-pro", "DeepSeek V4.1 Flash"),
     GPT_5_5("gpt-5.5", "GPT-5.5");
 
     private final String code;

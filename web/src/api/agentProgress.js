@@ -2,9 +2,13 @@
  * Agent 执行进度的接收端。
  *
  * 提交走的是异步任务 + 轮询，轮询只能看到"跑完没有"。中间每一步长什么样
- * 由服务端从 run 里推出来，走这条 WebSocket。
+ * 由服务端从 run 里推出来，走这条 WebSocket。服务端在 CONNECT 帧上校验访问令牌，
+ * 只把当前用户自己任务的进度推过来。
  */
 import { Client } from '@stomp/stompjs'
+import { getAccessToken } from '../utils/session'
+
+const PROGRESS_DESTINATION = '/user/queue/agent/progress'
 
 const listeners = new Set()
 let client = null
@@ -15,7 +19,7 @@ function brokerURL() {
   return `${scheme}://${location.host}/ws/agent`
 }
 
-/** 换了Sign in用户要重连：订阅的是 per-user 主题，连接认的是旧的那个 id。 */
+/** 换了登录用户要重连：服务端按连接时的令牌认人。 */
 function ensureConnected() {
   const userId = localStorage.getItem('userId')
   if (!userId || userId === connectedUserId) return
@@ -25,8 +29,12 @@ function ensureConnected() {
   client = new Client({
     brokerURL: brokerURL(),
     reconnectDelay: 5000,
+    // 每次（重新）连接都取当时的令牌，令牌刷新过也不会拿旧的去连
+    beforeConnect: (stomp) => {
+      stomp.connectHeaders = { Authorization: `Bearer ${getAccessToken()}` }
+    },
     onConnect: () => {
-      client.subscribe(`/topic/agent/users/${userId}`, (frame) => {
+      client.subscribe(PROGRESS_DESTINATION, (frame) => {
         let event
         try {
           event = JSON.parse(frame.body)

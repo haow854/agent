@@ -1,6 +1,7 @@
 package com.javaee.user.controller;
 
 import com.javaee.common.model.Result;
+import com.javaee.common.security.RequestUserContext;
 import com.javaee.user.dto.LoginDTO;
 import com.javaee.user.dto.RegisterDTO;
 import com.javaee.user.entity.User;
@@ -27,6 +28,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private RequestUserContext requestUserContext;
 
     /**
      * 用户登录
@@ -63,14 +67,13 @@ public class UserController {
     @Operation(summary = "获取用户信息", description = "根据用户ID获取用户详细信息")
     public Result<UserVO> getUserById(@Parameter(description = "用户ID") @PathVariable Long id) {
         log.info("获取用户信息: {}", id);
-        UserVO userVO = userService.getUserById(id);
-        return Result.success(userVO);
+        return Result.success(visibleToCaller(userService.getUserById(id)));
     }
 
     /**
-     * 刷新令牌
-     * @param refreshToken 刷新令牌
-     * @return 新的访问令牌
+     * 按用户名查找用户，分享文档时找协作者用
+     * @param username 用户名
+     * @return 用户信息（不是本人时只有 id 和用户名）
      */
     @GetMapping("/lookup")
     @Operation(summary = "根据用户名查询用户", description = "用于文档协作授权时查找协作者")
@@ -82,9 +85,28 @@ public class UserController {
         }
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
-        return Result.success(userVO);
+        return Result.success(visibleToCaller(userVO));
     }
 
+    /**
+     * 别人的资料只给 id 和用户名，分享文档、显示协作者用这两项就够了；
+     * 邮箱、手机号这些只有本人和管理员看得到，否则按 id 遍历就能拿到所有人的联系方式。
+     */
+    private UserVO visibleToCaller(UserVO user) {
+        if (user.getId().equals(requestUserContext.getRequiredUserId()) || requestUserContext.isAdmin()) {
+            return user;
+        }
+        UserVO visible = new UserVO();
+        visible.setId(user.getId());
+        visible.setUsername(user.getUsername());
+        return visible;
+    }
+
+    /**
+     * 用刷新令牌换新的访问令牌
+     * @param refreshToken 刷新令牌（访问令牌不行）
+     * @return 新的访问令牌
+     */
     @PostMapping("/refresh")
     @Operation(summary = "刷新令牌", description = "使用刷新令牌获取新的访问令牌")
     public Result<String> refreshToken(@Parameter(description = "刷新令牌") @RequestParam String refreshToken) {

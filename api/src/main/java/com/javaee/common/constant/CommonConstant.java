@@ -60,5 +60,9 @@ public class CommonConstant {
     public static final String TOKEN_CLAIM_USER_ID = "userId";
     public static final String TOKEN_CLAIM_USERNAME = "username";
     public static final String TOKEN_CLAIM_ROLE = "role";
+    // 令牌类型：访问令牌调接口，刷新令牌只能换新的访问令牌，两者不能混用
+    public static final String TOKEN_CLAIM_TYPE = "type";
+    public static final String TOKEN_TYPE_ACCESS = "access";
+    public static final String TOKEN_TYPE_REFRESH = "refresh";
 }
 

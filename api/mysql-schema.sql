@@ -88,7 +88,6 @@ CREATE TABLE IF NOT EXISTS `document_version` (
   `document_id` VARCHAR(64) NOT NULL,
   `version_number` INT NOT NULL,
   `title` VARCHAR(255) NOT NULL,
-  `content` LONGTEXT DEFAULT NULL,
   `summary` TEXT DEFAULT NULL,
   `keywords` TEXT DEFAULT NULL,
   `change_log` VARCHAR(500) DEFAULT NULL,

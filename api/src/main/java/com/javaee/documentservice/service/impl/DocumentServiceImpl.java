@@ -1,5 +1,7 @@
 package com.javaee.documentservice.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.javaee.common.exception.BusinessException;
 import com.javaee.documentservice.client.CollabClient;
 import com.javaee.documentservice.client.FileServiceClient;
@@ -7,7 +9,11 @@ import com.javaee.documentservice.dto.DocumentCreateDTO;
 import com.javaee.documentservice.dto.DocumentQueryDTO;
 import com.javaee.documentservice.dto.DocumentUpdateDTO;
 import com.javaee.documentservice.entity.Document;
+import com.javaee.documentservice.entity.DocumentAnnotation;
+import com.javaee.documentservice.entity.DocumentComment;
 import com.javaee.documentservice.entity.DocumentVersion;
+import com.javaee.documentservice.mapper.DocumentAnnotationMapper;
+import com.javaee.documentservice.mapper.DocumentCommentMapper;
 import com.javaee.documentservice.mapper.DocumentMapper;
 import com.javaee.documentservice.mapper.DocumentVersionMapper;
 import com.javaee.documentservice.service.DocumentAccessService;
@@ -47,6 +53,12 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Autowired
     private DocumentVersionMapper documentVersionMapper;
+
+    @Autowired
+    private DocumentCommentMapper documentCommentMapper;
+
+    @Autowired
+    private DocumentAnnotationMapper documentAnnotationMapper;
 
     @Autowired
     private DocumentContentService documentContentService;
@@ -243,26 +255,33 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 删除文档（软删除）
-     * 将文档状态标记为已删除，不物理删除
-     * @param id 文档ID
-     * @param userId 删除用户ID
+     * 永久删除：正文、协同状态、各版本正文、原始文件、版本记录、授权、评论和批注一起删掉。
+     * 删了找不回，所以只有所有者能删，协作者有写权限也不行。
+     *
+     * <p>先删存储再删记录：中途失败时文档记录还在，再删一次会把剩下的删完。文档已经不在
+     * 时直接返回，所以重放无害（Agent 恢复出来的 run 会重放这一步）。</p>
      */
     @Override
-    @Transactional
     public void delete(String id, Long userId) {
         Document document = documentMapper.selectById(id);
         if (document == null) {
-            throw new BusinessException("文档不存在");
+            return;
         }
-        documentAccessService.assertCanWrite(document, userId);
+        if (!documentAccessService.isOwner(document, userId)) {
+            throw new BusinessException("只有文档所有者可以删除");
+        }
 
-        document.setStatus("deleted");
-        document.setUpdateTime(LocalDateTime.now());
-        documentMapper.updateById(document);
-
-        // 删除MinIO中的文档内容
         documentContentService.deleteContent(id, storageBucketName(document));
+        if (document.getFileId() != null) {
+            fileServiceClient.delete(document.getFileId());
+        }
+        transactionTemplate.executeWithoutResult(status -> {
+            documentVersionMapper.delete(new QueryWrapper<DocumentVersion>().eq("document_id", id));
+            documentCommentMapper.delete(new QueryWrapper<DocumentComment>().eq("document_id", id));
+            documentAnnotationMapper.delete(new QueryWrapper<DocumentAnnotation>().eq("document_id", id));
+            documentAccessService.revokeAll(id);
+            documentMapper.deleteById(id);
+        });
     }
 
     @Override
@@ -349,45 +368,38 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     /**
-     * 恢复文档到指定版本
-     * 先保存当前版本作为历史版本，再恢复到指定版本的内容
-     * @param documentId 文档ID
-     * @param versionNumber 版本号
-     * @param userId 操作用户ID
-     * @return 恢复后的文档VO
+     * 恢复文档到指定版本。恢复前的内容存成一个历史版本。
+     *
+     * <p>正文经协同服务整篇替换：打开着的编辑器当场看到，随后的回存也不会把它盖回去。
+     * 协同服务替换完会当场回存、更新文档行，所以这一步在事务外面，元数据的事务放在它之后。</p>
      */
     @Override
-    @Transactional
     public DocumentVO restoreVersion(String documentId, Integer versionNumber, Long userId) {
-        Document document = documentMapper.selectById(documentId);
-        if (document == null) {
-            throw new BusinessException("文档不存在");
-        }
-        documentAccessService.assertCanWrite(document, userId);
+        Document before = requireDocument(documentId);
+        documentAccessService.assertCanWrite(before, userId);
 
         DocumentVersion version = documentVersionMapper.selectByDocumentIdAndVersion(documentId, versionNumber);
         if (version == null) {
             throw new BusinessException("版本不存在");
         }
 
-        // 获取当前内容用于保存版本
-        String currentContent = documentContentService.getContent(documentId, storageBucketName(document));
-        saveVersion(document, "恢复到版本" + versionNumber, currentContent);
+        String content = documentContentService.getVersionContent(documentId, version.getId(), storageBucketName(before));
+        String previous = collab.overwrite(documentId, userId, content);
 
-        document.setTitle(version.getTitle());
-        document.setSummary(version.getSummary());
-        document.setKeywords(version.getKeywords());
-        document.setVersion(document.getVersion() + 1);
-        document.setUpdateTime(LocalDateTime.now());
-
-        documentMapper.updateById(document);
-
-        // 恢复MinIO中的文档内容
-        documentContentService.updateContent(documentId, storageBucketName(document), version.getContent());
+        Document document = transactionTemplate.execute(status -> {
+            saveVersion(before, "恢复到版本" + versionNumber, previous);
+            Document current = requireDocument(documentId);
+            current.setTitle(version.getTitle());
+            current.setSummary(version.getSummary());
+            current.setKeywords(version.getKeywords());
+            current.setVersion(current.getVersion() + 1);
+            current.setUpdateTime(LocalDateTime.now());
+            documentMapper.updateById(current);
+            return current;
+        });
 
         DocumentVO vo = convertToVO(document);
-        // 从MinIO获取恢复后的内容
-        vo.setContent(version.getContent());
+        vo.setContent(content);
         return vo;
     }
 
@@ -440,18 +452,22 @@ public class DocumentServiceImpl implements DocumentService {
      * @param changeLog 变更日志
      * @param content 文档内容（从MinIO获取）
      */
+    // 先写正文再插记录：正文写不进去就什么都不留，不会有一条读不出正文的版本
     private void saveVersion(Document document, String changeLog, String content) {
         DocumentVersion version = new DocumentVersion();
+        version.setId(IdWorker.get32UUID());
         version.setDocumentId(document.getId());
         version.setVersionNumber(document.getVersion());
         version.setTitle(document.getTitle());
-        version.setContent(content);
         version.setSummary(document.getSummary());
         version.setKeywords(document.getKeywords());
         version.setChangeLog(changeLog);
         version.setCreatedBy(document.getCreatedBy());
         version.setCreateTime(LocalDateTime.now());
 
+        // getContent 读不到正文时返回 null，这时存一个空版本
+        documentContentService.saveVersionContent(
+                document.getId(), version.getId(), storageBucketName(document), content == null ? "" : content);
         documentVersionMapper.insert(version);
     }
 

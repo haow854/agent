@@ -10,8 +10,7 @@ const getAsyncJob = (jobId) => request.get(`/ai/async/jobs/${jobId}`)
  */
 const runAsyncAgentJob = (path, data) => createAsyncJobRunner({
     submit: () => request.post(path, data),
-    getJob: getAsyncJob,
-    timeoutMs: 300000
+    getJob: getAsyncJob
 }).runAsyncJob().then(wrapResult)
 
 export const agentApi = {
@@ -27,6 +26,10 @@ export const agentApi = {
 
     // 查询单个任务快照
     getTaskHistory: (taskId) => request.get(`/ai/agent/tasks/${taskId}`),
+
+    // 回答 ask_user 的提问，让停下的任务接着跑。userInputs 以被回答的那次调用的 toolCallId 为键
+    answerQuestion: (taskId, userInputs) =>
+        runAsyncAgentJob(`/ai/async/agent/tasks/${taskId}/continue`, { userInputs }),
 
     // 审批危险操作：Approve
     confirmApproval: (data) => request.post('/ai/agent/approvals/confirm', data),

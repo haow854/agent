@@ -8,6 +8,7 @@ import com.javaee.agentservice.llm.ModelToolDefinition;
 import com.javaee.agentservice.model.AgentState;
 import com.javaee.agentservice.model.AgentToolResult;
 import com.javaee.agentservice.tool.AgentToolRegistry;
+import com.javaee.agentservice.prompt.PromptEngineeringService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -28,25 +29,12 @@ public class SubAgentLoop {
 
     private static final Logger log = LoggerFactory.getLogger(SubAgentLoop.class);
 
-    private static final String SYSTEM_PROMPT = """
-            你是一个独立的执行体，替调用你的 agent 完成一件只读任务。
-            用手上的工具自己读取需要的内容，读够了就给结论。
-
-            读到的原文只在当前这一轮可见，下一轮就会被丢弃，只有你自己写下来的
-            内容会保留。所以每读完一段，先在回复里写下这一段里与任务有关的要点
-            和需要引用的原文，再继续读下一段。
-
-            结论里必须原样引用你依据的原文，并说明它出自哪篇文档或哪个网页。
-            做不到或找不到就直说，不要猜测，不要编造原文。
-            你只能读，不能修改任何东西。""";
-
-    private static final String BUDGET_SPENT =
-            "读取预算已用完，用你已经读到的内容给结论；不够就直说缺什么。";
-
     private static final String DROPPED = "[已读取，要点见后续回复]";
 
     @Autowired
     private LlmClient modelClient;
+    @Autowired
+    private PromptEngineeringService prompts;
     @Autowired
     private AgentToolRegistry toolRegistry;
     @Autowired
@@ -69,7 +57,7 @@ public class SubAgentLoop {
                       int toolCallBudget) {
         AgentState state = subState(parent, subRunId, instruction, tools, toolCallBudget);
         List<Message> messages = new ArrayList<>();
-        messages.add(new SystemMessage(SYSTEM_PROMPT));
+        messages.add(new SystemMessage(prompts.subagentSystemPrompt()));
         messages.add(new UserMessage(instruction));
 
         int toolCallsUsed = 0;
@@ -81,7 +69,7 @@ public class SubAgentLoop {
             boolean noMoreTools = round == maxRounds || toolCallsUsed >= toolCallBudget;
             forced |= noMoreTools;
             if (noMoreTools) {
-                messages.add(new UserMessage(BUDGET_SPENT));
+                messages.add(new UserMessage(prompts.subagentBudgetSpent()));
             }
             dropConsumedToolResults(messages, latestBatchStart);
 
@@ -127,7 +115,7 @@ public class SubAgentLoop {
         AgentState.RunConfig config = new AgentState.RunConfig(
                 goal,
                 parentConfig.model(),
-                SYSTEM_PROMPT,
+                prompts.subagentSystemPrompt(),
                 tools,
                 parentConfig.documentId(),
                 parentConfig.workspace(),

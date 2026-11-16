@@ -148,9 +148,6 @@ ai:
     # 所以窗口只在这里裁一次——网关再裁一刀会让引用对不上原文。
     # 必须小于 max-tool-result-chars。
     document-read-max-chars: 20000
-    # 每个用户每小时能开多少个新 Agent 任务。只拦新任务：审批确认和续接
-    # 是在推进已经开始的任务，拦住它们会让暂停的任务永远做不完。
-    max-tasks-per-hour: 20
     max-tool-result-chars: 24000
     # 微压缩：用户离开过一次（会话流里出现超过 after-ms 的断档）之后，走之前那摊
     # 工具结果的 data 换成占位符，toolName / status 这层信封照留。一直连着干活就
@@ -176,7 +173,7 @@ ai:
   # MCP 外部工具。连接在首次调用时才建立：未配置只影响这一个工具，不影响启动和测试。
   # search 三选一：streamable-url = 远程 Streamable HTTP；url = 远程 SSE；command/args = 本地 stdio。
   # Tavily 托管（免费 1000 次/月）：streamable-url=https://mcp.tavily.com/mcp/?tavilyApiKey=<key>，
-  #   tool-name=tavily-search，topk-param=max_results
+  #   tool-name=tavily_search，topk-param=max_results。web_fetch 也走这个连接，调 tavily_extract
   # Brave 本地（免费 2000 次/月）：command=npx，args=-y,@modelcontextprotocol/server-brave-search，
   #   需环境变量 BRAVE_API_KEY，tool-name/topk-param 用默认值
   mcp:
@@ -188,9 +185,6 @@ ai:
       args: ${SEARCH_MCP_ARGS:}
       tool-name: ${SEARCH_MCP_TOOL_NAME:brave_web_search}
       topk-param: ${SEARCH_MCP_TOPK_PARAM:count}
-    fetch:
-      command: ${MCP_FETCH_COMMAND:uvx}
-      args: ${MCP_FETCH_ARGS:mcp-server-fetch}
   aiops:
     metrics:
       retention-ms: 900000
@@ -217,7 +211,7 @@ ai:
         base-url: ${DASHSCOPE_COMPATIBLE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
         # 写死而不是让它落回 model code：这里的 code 是本地的枚举名，发出去的
         # 是厂商那边的模型名，两者没有理由永远相等。
-        model: ${DASHSCOPE_CHAT_MODEL:deepseek-v4-pro}
+        model: ${DASHSCOPE_CHAT_MODEL:deepseek-v4.1-flash-1017}
         enabled: true
       gpt-5.5:
         api-key: ${OPENAI_API_KEY:}
@@ -231,6 +225,8 @@ custom:
     secret: ${JWT_SECRET:}
     header: Authorization
     prefix: Bearer
+  # 是否开放注册。本地开发默认开放（评测脚本要注册账号）；docker compose 部署默认关闭
+  registration-enabled: ${REGISTRATION_ENABLED:true}
 
 springdoc:
   api-docs:

@@ -22,6 +22,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +40,9 @@ import java.util.UUID;
  */
 @Service
 public class AgentExecutionService {
+
+    /** 告诉模型「今天」用的时区。用户在国内，与数据库连接的 serverTimezone 一致。 */
+    private static final ZoneId USER_ZONE = ZoneId.of("Asia/Shanghai");
 
     @Autowired
     private ReactRunner runner;
@@ -331,13 +336,14 @@ public class AgentExecutionService {
     }
 
     private String workspaceBlock(Long userId, String documentId, String workspace) {
+        LocalDate today = LocalDate.now(USER_ZONE);
         if (documentId == null) {
-            return promptEngineeringService.workspaceBrief(workspace, null, null, null);
+            return promptEngineeringService.workspaceBrief(today, workspace, null, null, null);
         }
         DocumentVO document = documentService.getById(documentId, userId);
         FileMetadata file = blankTo(document.getFileId(), null) == null
                 ? null : fileMetadataService.getMetadata(document.getFileId());
-        return promptEngineeringService.workspaceBrief(workspace, document.getId(),
+        return promptEngineeringService.workspaceBrief(today, workspace, document.getId(),
                 document.getTitle(), file == null ? null : file.getFileType());
     }
 
